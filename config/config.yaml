@@ -1,0 +1,7 @@
+## Options needed
+# Finetuning style/ architecture: via downstream task (replicate CrisisBERT), via MLM, via Adapter
+# Datasets
+# Loss function
+# Pre-trained model from huggingface
+# Language
+
