@@ -5,3 +5,5 @@
 # Pre-trained model from huggingface
 # Language
 
+data_path: data/data/all_data_en/
+task: informativeness # informativeness or humanitarian
