@@ -1,7 +1,6 @@
 """ Create huggingface Dataset class for Crisis tweets """
 
-import csv
-import pprint
+import os
 import sys
 
 import datasets
@@ -9,63 +8,96 @@ import datasets
 from src.TweetNormalizer import normalizeTweet
 
 
-_CITATION = """\
+_CITATION = """\@inproceedings{alam2020standardizing,
+  title={CrisisBench: Benchmarking Crisis-related Social Media Datasets for Humanitarian Information Processing},
+  author={Alam, Firoj and Sajjad, Hassan and Imran, Muhammad and Ofli, Ferda},
+  booktitle={Proceedings of the International AAAI Conference on Web and Social Media},
+  series = {ICWSM~'21},
+ month={May}, 
+ pages={923-932},  
+ number={1},
+ volume={15}, 
+ url={https://ojs.aaai.org/index.php/ICWSM/article/view/18115},
+ year={2021}
+}
 """
 
 _DESCRIPTION = """\
-CrisisBench
+The CrisisBench dataset consists data from several different data sources such as CrisisLex (CrisisLex26, CrisisLex6), CrisisNLP, SWDM2013, ISCRAM13, Disaster Response Data (DRD), Disasters on Social Media (DSM), CrisisMMD and data from AIDR. 
 """
 
+_LICENSE = """CC BY-NC-SA 4.0"""
 
-class CrisisBenchConfig(datasets.BuilderConfig):
-    """BuilderConfig for CrisisBench."""
+_HOMEPAGE = """https://github.com/firojalam/crisis_datasets_benchmarks"""
 
-    def __init__(self, **kwargs):
-        """BuilderConfig for CrisisBench.
-        Args:
-          **kwargs: keyword arguments forwarded to super.
-        """
-        super(CrisisBenchConfig, self).__init__(**kwargs)
+_URL = """https://crisisnlp.qcri.org/data/crisis_datasets_benchmarks/crisis_datasets_benchmarks_v1.0.tar.gz"""
+_DATA_SUBFOLDER = """all_data_en"""
+
+
+class CrisisBenchBuilderConfig(datasets.BuilderConfig):
+    def __init__(self, name, description, classes):
+        datasets.BuilderConfig.__init__(self, name, description)
+        self.classes = classes
 
 
 class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
     """CrisisBench Dataset"""
-    def __init__(self, class_labels):
-        self.BUILDER_CONFIGS = [
-        CrisisBenchConfig(
-            name="crisis_bench",
-            version=datasets.Version("1.0.0"),
-            description="CrisisBench Dataset",
+    BUILDER_CONFIGS = [
+        CrisisBenchBuilderConfig(
+            name="humanitarian",
+            description="Classification task for humanitarian crisis type.",
+            classes=['affected_individual', 'caution_and_advice', 'displaced_and_evacuations',
+                     'donation_and_volunteering', 'infrastructure_and_utilities_damage', 'injured_or_dead_people', 'missing_and_found_people', 'not_humanitarian', 'requests_or_needs', 'response_efforts', 'sympathy_and_support'],
+        ),
+        CrisisBenchBuilderConfig(
+            name="informativeness",
+            description="Detection task for crisis tweets.",
+            classes=['informative', 'not_informative'],
         ),
         ]
 
-        self.class_labels = class_labels
+    DEFAULT_CONFIG_NAME = "informativeness"
 
     def _info(self):
+        if self.config.name == "humanitarian":
+            features = datasets.Features(
+                    {
+                        "text": datasets.Value("string"),
+                        "label": datasets.features.ClassLabel(names=self.config.classes),
+                    }
+                )
+        else:
+            features = datasets.Features(
+                    {
+                        "text": datasets.Value("string"),
+                        "label": datasets.features.ClassLabel(names=self.config.classes),
+                    }
+                )
+
         return datasets.DatasetInfo(
-            description="CrisisBench Corpus",
-            features=datasets.Features(
-                {
-                    "text": datasets.Value("string"),
-                    "label": datasets.features.ClassLabel(names=self.class_labels),
-                }
-            ),
+            description=_DESCRIPTION,
+            features=features,
             supervised_keys=None,
-            homepage="https://github.com/firojalam/crisis_datasets_benchmarks",
-            citation="Firoj Alam, Hassan Sajjad, Muhammad Imran and Ferda Ofli, CrisisBench: Benchmarking Crisis-related Social Media Datasets for Humanitarian Information Processing, In ICWSM, 2021.",
+            homepage=_HOMEPAGE,
+            citation=_CITATION,
+            license=_LICENSE,
             # task_templates=[TextClassification(text_column="text", label_column="label")],
         )
 
-    def _split_generators(self):
+    def _split_generators(self, dl_manager):
+        data_dir = dl_manager.download_and_extract(_URL)
         return [
             datasets.SplitGenerator(
-                name=datasets.Split.TRAIN, gen_kwargs={"filepath": self.data_paths["train"]}
+                name=datasets.Split.TRAIN, gen_kwargs={"filepath": os.path.join(data_dir, _DATA_SUBFOLDER,
+                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_train.tsv")}
             ),
             datasets.SplitGenerator(
-                name=datasets.Split.VALIDATION, gen_kwargs={"filepath": self.data_paths["dev"]}
+                name=datasets.Split.VALIDATION, gen_kwargs={"filepath": os.path.join(data_dir, _DATA_SUBFOLDER,
+                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_dev.tsv")}
             ),
             datasets.SplitGenerator(
-                name=datasets.Split.TEST, gen_kwargs={"filepath": self.data_paths["test"]}
+                name=datasets.Split.TEST, gen_kwargs={"filepath": os.path.join(data_dir, _DATA_SUBFOLDER,
+                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_test.tsv")}
             )
         ]
 
@@ -79,11 +111,11 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
         else:
             sys.exit("Unknown file format. Make sure to use a .tsv or .csv dataset file.")
 
-        label_enum_dict = {cls: i for i, cls in enumerate(self.class_labels)}
+        label_enum_dict = {cls: i for i, cls in enumerate(self.config.classes)}
 
         with open(filepath, "r", newline=None, encoding='utf-8', errors='replace') as f:
             next(f)  # skip head col
-            for id, line in enumerate(f):
+            for i, line in enumerate(f):
                 line = line.strip()
                 if line == "":
                     continue
@@ -95,6 +127,6 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
                 label = row[6]
                 label = label_enum_dict[label]
 
-                yield id, {"text": text, "label": label}
+                yield i, {"text": text, "label": label}
 
 
