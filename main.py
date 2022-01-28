@@ -21,7 +21,7 @@ def run(cfg: DictConfig):
     if not os.path.isdir(data_dir):
         zipfile_location = download_data_from_url(cfg)
         unzip_tar_file(zipfile_location)
-    dataset = load_dataset("/home/angelie/Documents/PhD/crisis-lm/src/custom_datasets.py",
+    dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
                            name="informativeness")
     print(dataset)
 if __name__ == "__main__":
