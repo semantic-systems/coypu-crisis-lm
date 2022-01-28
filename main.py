@@ -24,5 +24,6 @@ def run(cfg: DictConfig):
     dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
                            name="informativeness")
     print(dataset)
+    
 if __name__ == "__main__":
     run()
