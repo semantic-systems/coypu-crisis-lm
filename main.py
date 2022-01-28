@@ -6,6 +6,7 @@ import hydra
 from omegaconf import DictConfig
 
 from src.custom_datasets import CrisisBenchDataset
+from datasets import load_dataset
 
 
 @hydra.main(config_path="conf", config_name="config")
@@ -22,9 +23,8 @@ def run(cfg: DictConfig):
         sys.exit("Please specify a known task in your config.yaml: Either 'humanitarian' or "
                  "'informativeness'")
 
-    dataset = CrisisBenchDataset()
-
-    print(dataset._info())
-
+    dataset = load_dataset("/home/angelie/Documents/PhD/crisis-lm/src/custom_datasets.py",
+                           name="informativeness", data_dir="data/data/all_data_en")
+    print(dataset)
 if __name__ == "__main__":
     run()

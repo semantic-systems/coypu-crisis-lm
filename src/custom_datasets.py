@@ -4,6 +4,7 @@ import os
 import sys
 
 import datasets
+import hydra
 
 from src.TweetNormalizer import normalizeTweet
 
@@ -30,29 +31,35 @@ _LICENSE = """CC BY-NC-SA 4.0"""
 
 _HOMEPAGE = """https://github.com/firojalam/crisis_datasets_benchmarks"""
 
-_URL = """https://crisisnlp.qcri.org/data/crisis_datasets_benchmarks/crisis_datasets_benchmarks_v1.0.tar.gz"""
-_DATA_SUBFOLDER = """all_data_en"""
+#_URL = """https://crisisnlp.qcri.org/data/crisis_datasets_benchmarks
+# /crisis_datasets_benchmarks_v1.0.tar.gz"""
+_DATA_FOLDER = """data/data/all_data_en"""
 
 
 class CrisisBenchBuilderConfig(datasets.BuilderConfig):
-    def __init__(self, name, description, classes):
-        datasets.BuilderConfig.__init__(self, name, description)
+    def __init__(self, name, version, description, classes):
+        datasets.BuilderConfig.__init__(self, name, version, description)
         self.classes = classes
 
 
 class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
     """CrisisBench Dataset"""
+    VERSION = datasets.Version("1.0.0")
+
     BUILDER_CONFIGS = [
         CrisisBenchBuilderConfig(
             name="humanitarian",
-            description="Classification task for humanitarian crisis type.",
+            version=VERSION,
+            description="crisis_classification",
             classes=['affected_individual', 'caution_and_advice', 'displaced_and_evacuations',
                      'donation_and_volunteering', 'infrastructure_and_utilities_damage', 'injured_or_dead_people', 'missing_and_found_people', 'not_humanitarian', 'requests_or_needs', 'response_efforts', 'sympathy_and_support'],
         ),
         CrisisBenchBuilderConfig(
             name="informativeness",
-            description="Detection task for crisis tweets.",
+            version=VERSION,
+            description="crisis_detection",
             classes=['informative', 'not_informative'],
+
         ),
         ]
 
@@ -85,19 +92,19 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
         )
 
     def _split_generators(self, dl_manager):
-        data_dir = dl_manager.download_and_extract(_URL)
+
         return [
             datasets.SplitGenerator(
-                name=datasets.Split.TRAIN, gen_kwargs={"filepath": os.path.join(data_dir, _DATA_SUBFOLDER,
-                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_train.tsv")}
+                name=datasets.Split.TRAIN, gen_kwargs={"filepath": hydra.utils.to_absolute_path(os.path.join(_DATA_FOLDER,
+                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_train.tsv"))}
             ),
             datasets.SplitGenerator(
-                name=datasets.Split.VALIDATION, gen_kwargs={"filepath": os.path.join(data_dir, _DATA_SUBFOLDER,
-                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_dev.tsv")}
+                name=datasets.Split.VALIDATION, gen_kwargs={"filepath": hydra.utils.to_absolute_path(os.path.join(_DATA_FOLDER,
+                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_dev.tsv"))}
             ),
             datasets.SplitGenerator(
-                name=datasets.Split.TEST, gen_kwargs={"filepath": os.path.join(data_dir, _DATA_SUBFOLDER,
-                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_test.tsv")}
+                name=datasets.Split.TEST, gen_kwargs={"filepath": hydra.utils.to_absolute_path(os.path.join(_DATA_FOLDER,
+                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_test.tsv"))}
             )
         ]
 
