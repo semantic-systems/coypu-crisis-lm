@@ -21,8 +21,9 @@ def run(cfg: DictConfig):
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
     dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
-                           name="informativeness")
+                           name=cfg.task)
     print(dataset)
-    
+
+
 if __name__ == "__main__":
     run()
