@@ -2,7 +2,10 @@
 WIP: Development of a crisis-tweet LM 
 
 ## Data
-Load [CrisisBench corpus](https://crisisnlp.qcri.org/crisis_datasets_benchmarks) into data folder.
+When running `python main.py` the CrisisBench dataset is automatically downloaded to a data 
+folder within this project (if you don't already have it there). From this, a [huggingface 
+dataset](https://huggingface.co/docs/datasets/access.html) is created.  
+
 
 ## Fine-tuning approaches
 This repository will experiment with different LM fine-tuning approaches.
