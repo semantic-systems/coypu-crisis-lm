@@ -26,18 +26,17 @@ def get_trainer_args(cfg):
     if cfg.mode.name == "train":
         training_args = TrainingArguments(output_dir=output_dir,
                                           overwrite_output_dir=cfg.mode.continue_training,
-                                          do_train=True,
-                                          per_device_train_batch_size=cfg.mode.per_device_batch_size,
+                                          do_train=cfg.mode.do_train,
+                                          do_eval=cfg.mode.do_eval,
+                                          per_device_train_batch_size=cfg.mode.per_device_train_batch_size,
+                                          per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size,
                                           learning_rate=cfg.mode.learning_rate,
                                           weight_decay=cfg.mode.weight_decay,
                                           num_train_epochs=cfg.mode.num_train_epochs,
-                                          load_best_model_at_end=True,
+                                          #load_best_model_at_end=True,
                                           )
-    elif cfg.mode.name == "eval":
-        training_args = TrainingArguments(output_dir=output_dir,
-                                          do_eval=True,
-                                          per_device_eval_batch_size=cfg.mode.per_device_batch_size,
-                                          )
+    else:
+        sys.exit("Run mode not implemented. So far only supporting training.")
 
     return training_args
 
@@ -59,7 +58,7 @@ def train(cfg):
     def tokenize_function(examples):
         # Remove empty lines
         examples["text"] = [line for line in examples["text"] if len(line) > 0 and not line.isspace()]
-        return tokenizer(examples["text"], padding=padding, truncation=True, max_length=cfg.mode.max_seq_length)
+        return tokenizer(examples["text"], padding=padding, truncation=True, max_length=None)
 
     tokenized_dataset = dataset.map(
         tokenize_function,

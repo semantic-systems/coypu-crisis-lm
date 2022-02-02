@@ -6,7 +6,7 @@
 # Language
 
 defaults:
-  - mode: ?? # train, eval, predict
+  - mode: train # train, test, predict
   - model: bert # bert, roberta
 
 
