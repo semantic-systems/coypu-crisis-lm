@@ -1,5 +1,6 @@
 import os
 import sys
+from pprint import pprint
 
 import hydra
 from transformers import DataCollatorForWholeWordMask, DataCollatorForTokenClassification, Trainer, TrainingArguments
@@ -54,6 +55,8 @@ def train(cfg):
         unzip_tar_file(download_data_from_url(cfg))
     dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
                            name=cfg.task)
+
+    print("Loaded dataset with", dataset)
 
     def tokenize_function(examples):
         # Remove empty lines
