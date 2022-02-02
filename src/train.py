@@ -1,1 +1,3 @@
-# Training script per fine-tuning approach
+import sys
+
+from transformers import DataCollatorForLanguageModeling

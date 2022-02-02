@@ -1,0 +1,2 @@
+name: "bert"
+pretrained_model: "bert-base-uncased"

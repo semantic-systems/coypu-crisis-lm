@@ -1,0 +1,2 @@
+name: "distilbert"
+pretrained_model: "distilbert-base-uncased"

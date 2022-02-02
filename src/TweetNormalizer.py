@@ -12,9 +12,9 @@ tokenizer = TweetTokenizer()
 def normalizeToken(token):
     lowercased_token = token.lower()
     if token.startswith("@"):
-        return "@USER"
+        return "@user"
     elif lowercased_token.startswith("http") or lowercased_token.startswith("www"):
-        return "HTTPURL"
+        return "http"
     elif len(token) == 1:
         return demojize(token)
     else:
@@ -53,3 +53,16 @@ def normalizeTweet(tweet):
     )
 
     return " ".join(normTweet.split())
+
+
+"""TweetEval prepocessing. https://github.com/cardiffnlp/tweeteval"""
+
+
+def preprocess_tweet(text):
+    new_text = []
+    for t in text.split(" "):
+        t = '@user' if t.startswith('@') and len(t) > 1 else t
+        t = 'http' if t.startswith('http') else t
+        new_text.append(t)
+    return " ".join(new_text)
+
