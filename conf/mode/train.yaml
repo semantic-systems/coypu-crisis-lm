@@ -1,0 +1,9 @@
+name: "train"
+continue_training: False
+per_device_batch_size: 8
+learning_rate: 5e-5
+weight_decay: 0
+num_train_epochs: 2
+pad_to_max_length: False
+max_seq_length: None
+mlm_probability: None
