@@ -13,6 +13,9 @@ pad_to_max_length: False
 max_seq_length: None
 mlm_probability: None
 
+evaluation_strategy: "steps"
+eval_steps: 20
+logging_steps: 500
 early_stopping: False
 patience: 20
 

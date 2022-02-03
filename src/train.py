@@ -19,6 +19,10 @@ from src.utils import download_data_from_url, unzip_tar_file
 from src.custom_mlflow_callback import CustomMLflowCallback
 
 
+"""Train script. Some helper functions copied from 
+https://github.com/huggingface/transformers/blob/master/examples/research_projects/mlm_wwm/"""
+
+
 def get_data_collator(architecture, tokenizer, mlm_probability):
     if architecture == "mlm":
         data_collator = DataCollatorForWholeWordMask(tokenizer, mlm_probability)
@@ -45,8 +49,12 @@ def get_trainer_args(cfg):
                                           learning_rate=cfg.mode.learning_rate,
                                           weight_decay=cfg.mode.weight_decay,
                                           num_train_epochs=cfg.mode.num_train_epochs,
-                                          evaluation_strategy="steps",
-                                          load_best_model_at_end=True,
+                                          evaluation_strategy=cfg.mode.evaluation_strategy,
+                                          eval_steps=cfg.mode.eval_steps if
+                                          cfg.mode.evaluation_strategy == "steps" else None,
+                                          logging_steps=cfg.mode.logging_steps,
+                                          load_best_model_at_end=(cfg.mode.evaluation_strategy ==
+                                                                 "steps"),
                                           seed=cfg.seed,
                                           fp16=cfg.gpu.fp16,
                                           fp16_opt_level=cfg.gpu.fp16_opt_level,
@@ -58,7 +66,7 @@ def get_trainer_args(cfg):
     return training_args
 
 
-def get_last_checkpoint(cfg, training_args, logger):
+def _get_last_checkpoint(cfg, training_args, logger):
     """Detect and return last checkpoint or None."""
     last_checkpoint = None
     if os.path.isdir(
@@ -81,7 +89,7 @@ def get_last_checkpoint(cfg, training_args, logger):
     return checkpoint
 
 
-def eval_model(trainer, training_args, logger):
+def _eval_model(trainer, training_args, logger):
     results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate on validation set ***")
@@ -102,7 +110,7 @@ def eval_model(trainer, training_args, logger):
     return results
 
 
-def save_model_state(logger, train_result, trainer, training_args):
+def _save_model_state(logger, train_result, trainer, training_args):
     output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
     if trainer.is_world_process_zero():
         # Relevant for distributed training. Check if this is main process.
@@ -170,14 +178,14 @@ def train(cfg, logger):
         callbacks=callbacks
     )
 
-    checkpoint = get_last_checkpoint(cfg, training_args, logger)
+    checkpoint = _get_last_checkpoint(cfg, training_args, logger)
     train_result = trainer.train(resume_from_checkpoint=checkpoint)
 
     if cfg.mode.save_model:
         trainer.save_model()
 
-    save_model_state(logger, train_result, trainer, training_args)
-    results = eval_model(trainer, training_args, logger)
+    _save_model_state(logger, train_result, trainer, training_args)
+    results = _eval_model(trainer, training_args, logger)
 
     return results
 
