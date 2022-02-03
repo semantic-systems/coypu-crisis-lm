@@ -33,6 +33,7 @@ def get_trainer_args(cfg):
                                           do_eval=cfg.mode.do_eval,
                                           per_device_train_batch_size=cfg.mode.per_device_train_batch_size if not cfg.debugging_mode else 1,
                                           per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
+                                          optim="adamw_torch",
                                           learning_rate=cfg.mode.learning_rate,
                                           weight_decay=cfg.mode.weight_decay,
                                           num_train_epochs=cfg.mode.num_train_epochs,
