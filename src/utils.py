@@ -17,6 +17,7 @@ def download_data_from_url(cfg):
         print("Done downloading. Stored", dest_file)
     return dest_file
 
+
 def unzip_tar_file(filename):
     print("Unzipping", filename)
     out_path = hydra.utils.to_absolute_path(os.path.dirname(filename))
@@ -32,6 +33,7 @@ def unzip_tar_file(filename):
 
 
 def get_current_artifacts_dir(cfg):
+    # Get artifacts dir of current mlflow run
     mlflow_dir = os.path.join(hydra.utils.to_absolute_path(cfg.mlruns_dir), "0")
     latest_run_dir = max([f for f in os.listdir(mlflow_dir)], key=lambda x: os.stat(os.path.join(
         mlflow_dir, x)).st_mtime)

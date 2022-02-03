@@ -1,3 +1,7 @@
+""" Train LM via huggingface library.
+Some helper functions copied from
+https://github.com/huggingface/transformers/blob/master/examples/research_projects/mlm_wwm/ """
+
 import os
 import shutil
 import sys
@@ -20,8 +24,7 @@ from src.utils import download_data_from_url, unzip_tar_file, get_current_artifa
 from src.custom_mlflow_callback import CustomMLflowCallback
 
 
-"""Train script. Some helper functions copied from 
-https://github.com/huggingface/transformers/blob/master/examples/research_projects/mlm_wwm/"""
+
 
 tmp_output_dir = "tmp"
 #os.makedirs(tmp_output_dir, exist_ok=True)

@@ -1,11 +1,12 @@
+""" Overrides the setup function of huggingface's MLflowCallback: Start new mlflow run only if
+there is not already an active run. """
+
 import os
 
 import mlflow
 
 from transformers.integrations import MLflowCallback
 
-"""Overrides the setup function of huggingface's MLflowCallback: Start new mlflow run only if there 
-is not already an active run."""
 
 class CustomMLflowCallback(MLflowCallback):
 

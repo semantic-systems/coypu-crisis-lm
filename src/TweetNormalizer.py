@@ -1,5 +1,5 @@
-"""Tweet normalizer to prepare Tweets for BERT. Code taken from
-https://github.com/VinAIResearch/BERTweet."""
+""" Tweet normalizer to prepare Tweets for BERT. Code taken from
+https://github.com/VinAIResearch/BERTweet. """
 
 
 from emoji import demojize

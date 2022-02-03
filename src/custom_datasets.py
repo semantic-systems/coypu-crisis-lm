@@ -1,4 +1,4 @@
-""" Create huggingface Dataset class for Crisis tweets """
+""" Creates huggingface Dataset class for Crisis tweets """
 
 import os
 import sys
