@@ -37,9 +37,10 @@ _DATA_FOLDER = """data/data/all_data_en"""
 
 
 class CrisisBenchBuilderConfig(datasets.BuilderConfig):
-    def __init__(self, name, version, description, classes):
+    def __init__(self, name, version, description, classes, filename):
         datasets.BuilderConfig.__init__(self, name, version, description)
         self.classes = classes
+        self.filename = filename
 
 
 class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
@@ -53,13 +54,21 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
             description="crisis_classification",
             classes=['affected_individual', 'caution_and_advice', 'displaced_and_evacuations',
                      'donation_and_volunteering', 'infrastructure_and_utilities_damage', 'injured_or_dead_people', 'missing_and_found_people', 'not_humanitarian', 'requests_or_needs', 'response_efforts', 'sympathy_and_support'],
+            filename="humanitarian",
         ),
         CrisisBenchBuilderConfig(
             name="informativeness",
             version=VERSION,
             description="crisis_detection",
             classes=['informative', 'not_informative'],
-
+            filename="informativeness",
+        ),
+        CrisisBenchBuilderConfig(
+            name="debugging",
+            version=VERSION,
+            description="tiny_debugging_sample",
+            classes=['informative', 'not_informative'],
+            filename="informativeness",
         ),
         ]
 
@@ -96,15 +105,15 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
         return [
             datasets.SplitGenerator(
                 name=datasets.Split.TRAIN, gen_kwargs={"filepath": hydra.utils.to_absolute_path(os.path.join(_DATA_FOLDER,
-                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_train.tsv"))}
+                                                                                f"crisis_consolidated_{self.config.filename}_filtered_lang_en_train.tsv"))}
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION, gen_kwargs={"filepath": hydra.utils.to_absolute_path(os.path.join(_DATA_FOLDER,
-                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_dev.tsv"))}
+                                                                                f"crisis_consolidated_{self.config.filename}_filtered_lang_en_dev.tsv"))}
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.TEST, gen_kwargs={"filepath": hydra.utils.to_absolute_path(os.path.join(_DATA_FOLDER,
-                                                                                f"crisis_consolidated_{self.config.name}_filtered_lang_en_test.tsv"))}
+                                                                                f"crisis_consolidated_{self.config.filename}_filtered_lang_en_test.tsv"))}
             )
         ]
 
@@ -122,18 +131,31 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
 
         with open(filepath, "r", newline=None, encoding='utf-8', errors='replace') as f:
             next(f)  # skip head col
-            for i, line in enumerate(f):
-                line = line.strip()
-                if line == "":
-                    continue
-                row = line.split(delim)
+            if self.config.name != "debugging":
+                for i, line in enumerate(f):
+                    line = line.strip()
+                    if line == "":
+                        continue
+                    label, text = self._extract_text_label_from_line(line, delim, label_enum_dict)
 
-                text = row[3].strip()
-                text = normalizeTweet(text)
+                    yield i, {"text": text, "label": label}
+            else:
+                for i, line in enumerate(f):
+                    if i < 5:
+                        line = line.strip()
+                        if line == "":
+                            continue
+                        label, text = self._extract_text_label_from_line(line, delim,
+                                                                        label_enum_dict)
 
-                label = row[6]
-                label = label_enum_dict[label]
+                        yield i, {"text": text, "label": label}
 
-                yield i, {"text": text, "label": label}
+    def _extract_text_label_from_line(self, line, delim, label_enum_dict):
+        row = line.split(delim)
+        text = row[3].strip()
+        text = normalizeTweet(text)
+        label = row[6]
+        label = label_enum_dict[label]
+        return label, text
 
 

@@ -3,7 +3,8 @@ import sys
 from pprint import pprint
 
 import hydra
-from transformers import DataCollatorForWholeWordMask, DataCollatorForTokenClassification, Trainer, TrainingArguments
+from transformers import DataCollatorForWholeWordMask, DataCollatorForTokenClassification, Trainer, \
+    TrainingArguments
 from datasets import load_dataset
 
 from src.model_helpers import get_model_and_tokenizer
@@ -16,7 +17,8 @@ def get_data_collator(architecture, tokenizer, mlm_probability):
     elif architecture == "seq":
         data_collator = DataCollatorForTokenClassification(tokenizer)
     else:
-        sys.exit("Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
+        sys.exit(
+            "Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
     return data_collator
 
 
@@ -29,8 +31,8 @@ def get_trainer_args(cfg):
                                           overwrite_output_dir=cfg.mode.continue_training,
                                           do_train=cfg.mode.do_train,
                                           do_eval=cfg.mode.do_eval,
-                                          per_device_train_batch_size=cfg.mode.per_device_train_batch_size,
-                                          per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size,
+                                          per_device_train_batch_size=cfg.mode.per_device_train_batch_size if not cfg.debugging_mode else 1,
+                                          per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
                                           learning_rate=cfg.mode.learning_rate,
                                           weight_decay=cfg.mode.weight_decay,
                                           num_train_epochs=cfg.mode.num_train_epochs,
@@ -51,21 +53,24 @@ def train(cfg):
     num_labels = 2 if cfg.task == "informativeness" else 11
     padding = "max_length" if cfg.mode.pad_to_max_length else False
 
-    model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture, num_labels)
+    model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
+                                               num_labels)
     training_args = get_trainer_args(cfg)
     data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.mode.mlm_probability)
 
     data_dir = hydra.utils.to_absolute_path(os.path.join(cfg.data_path, cfg.data_subfolder))
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
-    dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
-                           name=cfg.task)
 
-    #print("Loaded dataset with", dataset)
+    dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
+                           name=cfg.task if not cfg.debugging_mode else "debugging")
+
+    print("Loaded dataset with", dataset)
 
     def tokenize_function(examples):
         # Remove empty lines
-        examples["text"] = [line for line in examples["text"] if len(line) > 0 and not line.isspace()]
+        examples["text"] = [line for line in examples["text"] if
+                            len(line) > 0 and not line.isspace()]
         return tokenizer(examples["text"], padding=padding, truncation=True, max_length=None)
 
     tokenized_dataset = dataset.map(
@@ -87,5 +92,3 @@ def train(cfg):
     )
 
     trainer.train()
-
-
