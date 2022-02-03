@@ -6,6 +6,7 @@
 # Language
 
 defaults:
+  - _self_
   - mode: train # train, test, predict
   - model: distilbert # see 'model' config subfolder for options
 
