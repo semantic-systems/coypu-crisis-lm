@@ -10,3 +10,4 @@ num_train_epochs: 2
 pad_to_max_length: False
 max_seq_length: None
 mlm_probability: None
+patience: 20

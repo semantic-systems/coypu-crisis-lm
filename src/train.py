@@ -3,13 +3,19 @@ import sys
 from pprint import pprint
 
 import hydra
-from transformers import DataCollatorForWholeWordMask, DataCollatorForTokenClassification, Trainer, \
-    TrainingArguments
+from transformers import (
+    DataCollatorForWholeWordMask,
+    DataCollatorForTokenClassification,
+    Trainer,
+    TrainingArguments,
+    EarlyStoppingCallback,
+)
+
 from datasets import load_dataset
 
 from src.model_helpers import get_model_and_tokenizer
 from src.utils import download_data_from_url, unzip_tar_file
-
+from src.custom_mlflow_callback import CustomMLflowCallback
 
 def get_data_collator(architecture, tokenizer, mlm_probability):
     if architecture == "mlm":
@@ -59,13 +65,13 @@ def train(cfg):
     training_args = get_trainer_args(cfg)
     data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.mode.mlm_probability)
 
+    # Get and prepare data
     data_dir = hydra.utils.to_absolute_path(os.path.join(cfg.data_path, cfg.data_subfolder))
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
 
     dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
                            name=cfg.task if not cfg.debugging_mode else "debugging")
-
     print("Loaded dataset with", dataset)
 
     def tokenize_function(examples):
@@ -83,6 +89,14 @@ def train(cfg):
     print("Tokenized dataset:")
     pprint(tokenized_dataset)
 
+    # Define callbacks
+    early_stopping_cb = EarlyStoppingCallback(
+        early_stopping_patience=cfg.mode.patience
+    )
+    mlflow_cb = CustomMLflowCallback()
+    callbacks = [early_stopping_cb, mlflow_cb]
+
+    # Setup trainer
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -90,6 +104,7 @@ def train(cfg):
         eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=data_collator,
+        callbacks=callbacks
     )
 
     trainer.train()
