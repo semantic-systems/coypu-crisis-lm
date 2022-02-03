@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 from pprint import pprint
 
 import hydra
@@ -10,12 +11,13 @@ from transformers import (
     TrainingArguments,
     EarlyStoppingCallback,
 )
-
+from transformers.trainer_utils import get_last_checkpoint
 from datasets import load_dataset
 
 from src.model_helpers import get_model_and_tokenizer
 from src.utils import download_data_from_url, unzip_tar_file
 from src.custom_mlflow_callback import CustomMLflowCallback
+
 
 def get_data_collator(architecture, tokenizer, mlm_probability):
     if architecture == "mlm":
@@ -29,7 +31,7 @@ def get_data_collator(architecture, tokenizer, mlm_probability):
 
 
 def get_trainer_args(cfg):
-    output_dir = hydra.utils.to_absolute_path(cfg.model_dir)
+    output_dir = cfg.model_dir
     os.makedirs(output_dir, exist_ok=True)
 
     if cfg.mode.name == "train":
@@ -56,7 +58,65 @@ def get_trainer_args(cfg):
     return training_args
 
 
-def train(cfg):
+def get_last_checkpoint(cfg, training_args, logger):
+    """Detect and return last checkpoint or None."""
+    last_checkpoint = None
+    if os.path.isdir(
+            training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
+        last_checkpoint = get_last_checkpoint(training_args.output_dir)
+        if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
+            raise ValueError(
+                f"Output directory ({training_args.output_dir}) already exists and is not empty."
+            )
+        elif last_checkpoint is not None:
+            logger.info(
+                f"Checkpoint detected, resuming training at {last_checkpoint}."
+            )
+    if last_checkpoint is not None:
+        checkpoint = last_checkpoint
+    elif cfg.model.pretrained_model is not None and os.path.isdir(cfg.model.pretrained_model):
+        checkpoint = cfg.model.pretrained_model
+    else:
+        checkpoint = None
+    return checkpoint
+
+
+def eval_model(trainer, training_args, logger):
+    results = {}
+    if training_args.do_eval:
+        logger.info("*** Evaluate on validation set ***")
+
+        eval_output = trainer.evaluate()
+
+        perplexity = math.exp(eval_output["eval_loss"])
+        results["perplexity"] = perplexity
+
+        output_eval_file = os.path.join(training_args.output_dir, "eval_results.txt")
+        if trainer.is_world_process_zero():
+            # Relevant for distributed training. Check if this is main process.
+            with open(output_eval_file, "w") as writer:
+                logger.info("***** Eval results *****")
+                for key, value in sorted(results.items()):
+                    logger.info(f"  {key} = {value}")
+                    writer.write(f"{key} = {value}\n")
+    return results
+
+
+def save_model_state(logger, train_result, trainer, training_args):
+    output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
+    if trainer.is_world_process_zero():
+        # Relevant for distributed training. Check if this is main process.
+        with open(output_train_file, "w") as writer:
+            logger.info("***** Train results *****")
+            for key, value in sorted(train_result.metrics.items()):
+                logger.info(f"  {key} = {value}")
+                writer.write(f"{key} = {value}\n")
+
+        # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
+        trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
+
+
+def train(cfg, logger):
     num_labels = 2 if cfg.task == "informativeness" else 11
     padding = "max_length" if cfg.mode.pad_to_max_length else False
 
@@ -90,11 +150,14 @@ def train(cfg):
     pprint(tokenized_dataset)
 
     # Define callbacks
-    early_stopping_cb = EarlyStoppingCallback(
-        early_stopping_patience=cfg.mode.patience
-    )
     mlflow_cb = CustomMLflowCallback()
-    callbacks = [early_stopping_cb, mlflow_cb]
+    callbacks = [mlflow_cb]
+
+    if cfg.mode.early_stopping:
+        early_stopping_cb = EarlyStoppingCallback(
+            early_stopping_patience=cfg.mode.patience
+        )
+        callbacks += [early_stopping_cb]
 
     # Setup trainer
     trainer = Trainer(
@@ -107,4 +170,16 @@ def train(cfg):
         callbacks=callbacks
     )
 
-    trainer.train()
+    checkpoint = get_last_checkpoint(cfg, training_args, logger)
+    train_result = trainer.train(resume_from_checkpoint=checkpoint)
+
+    if cfg.mode.save_model:
+        trainer.save_model()
+
+    save_model_state(logger, train_result, trainer, training_args)
+    results = eval_model(trainer, training_args, logger)
+
+    return results
+
+
+
