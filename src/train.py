@@ -34,7 +34,12 @@ def get_trainer_args(cfg):
                                           learning_rate=cfg.mode.learning_rate,
                                           weight_decay=cfg.mode.weight_decay,
                                           num_train_epochs=cfg.mode.num_train_epochs,
-                                          #load_best_model_at_end=True,
+                                          evaluation_strategy="steps",
+                                          load_best_model_at_end=True,
+                                          seed=cfg.seed,
+                                          fp16=cfg.gpu.fp16,
+                                          fp16_opt_level=cfg.gpu.fp16_opt_level,
+                                          half_precision_backend=cfg.gpu.half_precision_backend,
                                           )
     else:
         sys.exit("Run mode not implemented. So far only supporting training.")
@@ -56,7 +61,7 @@ def train(cfg):
     dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
                            name=cfg.task)
 
-    print("Loaded dataset with", dataset)
+    #print("Loaded dataset with", dataset)
 
     def tokenize_function(examples):
         # Remove empty lines
@@ -68,6 +73,9 @@ def train(cfg):
         batched=True,
         load_from_cache_file=not cfg.overwrite_data_cache,
     )
+
+    print("Tokenized dataset:")
+    pprint(tokenized_dataset)
 
     trainer = Trainer(
         model=model,

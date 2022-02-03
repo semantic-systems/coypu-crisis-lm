@@ -3,6 +3,7 @@ import sys
 import os
 import warnings
 
+import mlflow
 import hydra
 from omegaconf import DictConfig
 
@@ -11,6 +12,8 @@ from src.train import train
 
 @hydra.main(config_path="conf", config_name="config")
 def run(cfg: DictConfig):
+    mlruns_folder = hydra.utils.to_absolute_path("mlruns")
+    mlflow.set_tracking_uri(f"file:{mlruns_folder}")
     #logger = logging.getLogger(__name__)
     #logger.setLevel(logging.INFO)
     #warnings.filterwarnings("ignore")
