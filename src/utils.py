@@ -29,3 +29,11 @@ def unzip_tar_file(filename):
         tar.extractall(path=out_path)
         tar.close()
     print("Done unzipping.")
+
+
+def get_current_artifacts_dir(cfg):
+    mlflow_dir = os.path.join(hydra.utils.to_absolute_path(cfg.mlruns_dir), "0")
+    latest_run_dir = max([f for f in os.listdir(mlflow_dir)], key=lambda x: os.stat(os.path.join(
+        mlflow_dir, x)).st_mtime)
+    output_dir = os.path.join(mlflow_dir, latest_run_dir, "artifacts")
+    return output_dir

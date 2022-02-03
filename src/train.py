@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import math
 from pprint import pprint
@@ -15,13 +16,15 @@ from transformers.trainer_utils import get_last_checkpoint
 from datasets import load_dataset
 
 from src.model_helpers import get_model_and_tokenizer
-from src.utils import download_data_from_url, unzip_tar_file
+from src.utils import download_data_from_url, unzip_tar_file, get_current_artifacts_dir
 from src.custom_mlflow_callback import CustomMLflowCallback
 
 
 """Train script. Some helper functions copied from 
 https://github.com/huggingface/transformers/blob/master/examples/research_projects/mlm_wwm/"""
 
+tmp_output_dir = "tmp"
+#os.makedirs(tmp_output_dir, exist_ok=True)
 
 def get_data_collator(architecture, tokenizer, mlm_probability):
     if architecture == "mlm":
@@ -35,11 +38,8 @@ def get_data_collator(architecture, tokenizer, mlm_probability):
 
 
 def get_trainer_args(cfg):
-    output_dir = cfg.model_dir
-    os.makedirs(output_dir, exist_ok=True)
-
     if cfg.mode.name == "train":
-        training_args = TrainingArguments(output_dir=output_dir,
+        training_args = TrainingArguments(output_dir=tmp_output_dir,
                                           overwrite_output_dir=cfg.mode.continue_training,
                                           do_train=cfg.mode.do_train,
                                           do_eval=cfg.mode.do_eval,
@@ -186,6 +186,13 @@ def train(cfg, logger):
 
     _save_model_state(logger, train_result, trainer, training_args)
     results = _eval_model(trainer, training_args, logger)
+
+    # Move all stored artifacts to mlflow run
+    artifacts_dir = get_current_artifacts_dir(cfg)
+    for file_name in os.listdir(tmp_output_dir):
+        shutil.move(os.path.join(tmp_output_dir, file_name), artifacts_dir)
+        shutil.copy(os.path.join(".hydra", "config.yaml"), os.path.join(artifacts_dir, "config.yaml"))
+    os.rmdir(tmp_output_dir)
 
     return results
 

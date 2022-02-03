@@ -12,7 +12,7 @@ defaults:
 
 
 architecture: mlm # mlm, seq = sequence classification (& later adapter)
-model_dir: hf_output
+mlruns_dir: mlruns
 
 overwrite_data_cache: True
 data_path: data # high-level data folder

@@ -8,15 +8,15 @@ per_device_train_batch_size: 8
 per_device_eval_batch_size: 8
 learning_rate: 5e-5
 weight_decay: 0
-num_train_epochs: 100
+num_train_epochs: 1
 pad_to_max_length: False
 max_seq_length: None
 mlm_probability: None
 
 evaluation_strategy: "steps"
-eval_steps: 20
+eval_steps: 500
 logging_steps: 500
 early_stopping: False
 patience: 20
 
-save_model: False
+save_model: True
