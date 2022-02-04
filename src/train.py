@@ -23,11 +23,10 @@ from src.model_helpers import get_model_and_tokenizer
 from src.utils import download_data_from_url, unzip_tar_file, get_current_artifacts_dir
 from src.custom_mlflow_callback import CustomMLflowCallback
 
-
-
-
 tmp_output_dir = "tmp"
-#os.makedirs(tmp_output_dir, exist_ok=True)
+
+
+# os.makedirs(tmp_output_dir, exist_ok=True)
 
 def get_data_collator(architecture, tokenizer, mlm_probability):
     if architecture == "mlm":
@@ -42,31 +41,31 @@ def get_data_collator(architecture, tokenizer, mlm_probability):
 
 def get_trainer_args(cfg):
     if cfg.mode.name == "train":
-        training_args = TrainingArguments(output_dir=tmp_output_dir,
-                                          overwrite_output_dir=cfg.mode.continue_training,
-                                          do_train=cfg.mode.do_train,
-                                          do_eval=cfg.mode.do_eval,
-                                          per_device_train_batch_size=cfg.mode.per_device_train_batch_size if not cfg.debugging_mode else 1,
-                                          per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
-                                          optim="adamw_torch",
-                                          learning_rate=cfg.mode.learning_rate,
-                                          weight_decay=cfg.mode.weight_decay,
-                                          num_train_epochs=cfg.mode.num_train_epochs,
-                                          evaluation_strategy=cfg.mode.evaluation_strategy,
-                                          eval_steps=cfg.mode.eval_steps if
-                                          cfg.mode.evaluation_strategy == "steps" else None,
-                                          logging_steps=cfg.mode.logging_steps,
-                                          load_best_model_at_end=(cfg.mode.evaluation_strategy ==
+        trainer_args = TrainingArguments(output_dir=tmp_output_dir,
+                                         overwrite_output_dir=cfg.mode.continue_training,
+                                         do_train=cfg.mode.do_train,
+                                         do_eval=cfg.mode.do_eval,
+                                         per_device_train_batch_size=cfg.mode.per_device_train_batch_size if not cfg.debugging_mode else 1,
+                                         per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
+                                         optim="adamw_torch",
+                                         learning_rate=cfg.mode.learning_rate,
+                                         weight_decay=cfg.mode.weight_decay,
+                                         num_train_epochs=cfg.mode.num_train_epochs,
+                                         evaluation_strategy=cfg.mode.evaluation_strategy,
+                                         eval_steps=cfg.mode.eval_steps if
+                                         cfg.mode.evaluation_strategy == "steps" else None,
+                                         logging_steps=cfg.mode.logging_steps,
+                                         load_best_model_at_end=(cfg.mode.evaluation_strategy ==
                                                                  "steps"),
-                                          seed=cfg.seed,
-                                          fp16=cfg.gpu.fp16,
-                                          fp16_opt_level=cfg.gpu.fp16_opt_level,
-                                          half_precision_backend=cfg.gpu.half_precision_backend,
-                                          )
+                                         seed=cfg.seed,
+                                         fp16=cfg.gpu.fp16,
+                                         fp16_opt_level=cfg.gpu.fp16_opt_level,
+                                         half_precision_backend=cfg.gpu.half_precision_backend,
+                                         )
     else:
         sys.exit("Run mode not implemented. So far only supporting training.")
 
-    return training_args
+    return trainer_args
 
 
 def _get_last_checkpoint(cfg, training_args, logger):
@@ -127,29 +126,32 @@ def _save_model_state(logger, train_result, trainer, training_args):
         trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
 
 
-def train(cfg, logger):
-    num_labels = 2 if cfg.task == "informativeness" else 11
-    padding = "max_length" if cfg.mode.pad_to_max_length else False
-
-    model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
-                                               num_labels)
-    training_args = get_trainer_args(cfg)
-    data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.mode.mlm_probability)
-
+def _get_data(cfg):
     # Get and prepare data
     data_dir = hydra.utils.to_absolute_path(os.path.join(cfg.data_path, cfg.data_subfolder))
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
-
     dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
                            name=cfg.task if not cfg.debugging_mode else "debugging")
     print("Loaded dataset with", dataset)
+    return dataset
+
+
+def train(cfg, logger):
+    model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
+                                               2 if cfg.task == "informativeness" else 11)
+    training_args = get_trainer_args(cfg)
+    data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.mode.mlm_probability)
+
+    dataset = _get_data(cfg)
 
     def tokenize_function(examples):
         # Remove empty lines
         examples["text"] = [line for line in examples["text"] if
                             len(line) > 0 and not line.isspace()]
-        return tokenizer(examples["text"], padding=padding, truncation=True, max_length=None)
+        return tokenizer(examples["text"],
+                         padding="max_length" if cfg.mode.pad_to_max_length else False,
+                         truncation=True, max_length=None)
 
     tokenized_dataset = dataset.map(
         tokenize_function,
@@ -194,10 +196,10 @@ def train(cfg, logger):
     artifacts_dir = get_current_artifacts_dir(cfg)
     for file_name in os.listdir(tmp_output_dir):
         shutil.move(os.path.join(tmp_output_dir, file_name), artifacts_dir)
-        shutil.copy(os.path.join(".hydra", "config.yaml"), os.path.join(artifacts_dir, "config.yaml"))
+        shutil.copy(os.path.join(".hydra", "config.yaml"),
+                    os.path.join(artifacts_dir, "config.yaml"))
     os.rmdir(tmp_output_dir)
 
     return results
-
 
 
