@@ -4,68 +4,22 @@ https://github.com/huggingface/transformers/blob/master/examples/research_projec
 
 import os
 import shutil
-import sys
 import math
 from pprint import pprint
 
-import hydra
 from transformers import (
-    DataCollatorForWholeWordMask,
-    DataCollatorForTokenClassification,
     Trainer,
-    TrainingArguments,
     EarlyStoppingCallback,
 )
 from transformers.trainer_utils import get_last_checkpoint
-from datasets import load_dataset
 
-from src.model_helpers import get_model_and_tokenizer
-from src.utils import download_data_from_url, unzip_tar_file, get_current_artifacts_dir
+from src.train_helpers import get_model_and_tokenizer, get_data_collator, get_trainer_args, \
+    save_model_state, get_data
+from src.utils import get_current_artifacts_dir
 from src.custom_mlflow_callback import CustomMLflowCallback
 
 tmp_output_dir = "tmp"
-
-
 # os.makedirs(tmp_output_dir, exist_ok=True)
-
-def get_data_collator(architecture, tokenizer, mlm_probability):
-    if architecture == "mlm":
-        data_collator = DataCollatorForWholeWordMask(tokenizer, mlm_probability)
-    elif architecture == "seq":
-        data_collator = DataCollatorForTokenClassification(tokenizer)
-    else:
-        sys.exit(
-            "Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
-    return data_collator
-
-
-def get_trainer_args(cfg):
-    if cfg.mode.name == "train":
-        trainer_args = TrainingArguments(output_dir=tmp_output_dir,
-                                         overwrite_output_dir=cfg.mode.continue_training,
-                                         do_train=cfg.mode.do_train,
-                                         do_eval=cfg.mode.do_eval,
-                                         per_device_train_batch_size=cfg.mode.per_device_train_batch_size if not cfg.debugging_mode else 1,
-                                         per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
-                                         optim="adamw_torch",
-                                         learning_rate=cfg.mode.learning_rate,
-                                         weight_decay=cfg.mode.weight_decay,
-                                         num_train_epochs=cfg.mode.num_train_epochs,
-                                         evaluation_strategy=cfg.mode.evaluation_strategy,
-                                         eval_steps=cfg.mode.eval_steps if
-                                         cfg.mode.evaluation_strategy == "steps" else None,
-                                         logging_steps=cfg.mode.logging_steps,
-                                         load_best_model_at_end=(cfg.mode.evaluation_strategy ==
-                                                                 "steps"),
-                                         seed=cfg.seed,
-                                         fp16=cfg.gpu.fp16,
-                                         fp16_opt_level=cfg.gpu.fp16_opt_level,
-                                         half_precision_backend=cfg.gpu.half_precision_backend,
-                                         )
-    else:
-        sys.exit("Run mode not implemented. So far only supporting training.")
-
-    return trainer_args
 
 
 def _get_last_checkpoint(cfg, training_args, logger):
@@ -112,38 +66,13 @@ def _eval_model(trainer, training_args, logger):
     return results
 
 
-def _save_model_state(logger, train_result, trainer, training_args):
-    output_train_file = os.path.join(training_args.output_dir, "train_results.txt")
-    if trainer.is_world_process_zero():
-        # Relevant for distributed training. Check if this is main process.
-        with open(output_train_file, "w") as writer:
-            logger.info("***** Train results *****")
-            for key, value in sorted(train_result.metrics.items()):
-                logger.info(f"  {key} = {value}")
-                writer.write(f"{key} = {value}\n")
-
-        # Need to save the state, since Trainer.save_model saves only the tokenizer with the model
-        trainer.state.save_to_json(os.path.join(training_args.output_dir, "trainer_state.json"))
-
-
-def _get_data(cfg):
-    # Get and prepare data
-    data_dir = hydra.utils.to_absolute_path(os.path.join(cfg.data_path, cfg.data_subfolder))
-    if not os.path.isdir(data_dir):
-        unzip_tar_file(download_data_from_url(cfg))
-    dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
-                           name=cfg.task if not cfg.debugging_mode else "debugging")
-    print("Loaded dataset with", dataset)
-    return dataset
-
-
 def train(cfg, logger):
     model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
                                                2 if cfg.task == "informativeness" else 11)
-    training_args = get_trainer_args(cfg)
+    training_args = get_trainer_args(cfg, tmp_output_dir)
     data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.mode.mlm_probability)
 
-    dataset = _get_data(cfg)
+    dataset = get_data(cfg)
 
     def tokenize_function(examples):
         # Remove empty lines
@@ -189,7 +118,7 @@ def train(cfg, logger):
     if cfg.mode.save_model:
         trainer.save_model()
 
-    _save_model_state(logger, train_result, trainer, training_args)
+    save_model_state(logger, train_result, trainer, training_args)
     results = _eval_model(trainer, training_args, logger)
 
     # Move all stored artifacts to mlflow run
