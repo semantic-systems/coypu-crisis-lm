@@ -64,6 +64,13 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
             filename="informativeness",
         ),
         CrisisBenchBuilderConfig(
+            name="mlm",
+            version=VERSION,
+            description="crisis_tweets",
+            classes=['informative'],
+            filename="informativeness",
+        ),
+        CrisisBenchBuilderConfig(
             name="debugging",
             version=VERSION,
             description="tiny_debugging_sample",
@@ -75,20 +82,12 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
     DEFAULT_CONFIG_NAME = "informativeness"
 
     def _info(self):
-        if self.config.name == "humanitarian":
-            features = datasets.Features(
-                    {
-                        "text": datasets.Value("string"),
-                        "label": datasets.features.ClassLabel(names=self.config.classes),
-                    }
-                )
-        else:
-            features = datasets.Features(
-                    {
-                        "text": datasets.Value("string"),
-                        "label": datasets.features.ClassLabel(names=self.config.classes),
-                    }
-                )
+        features = datasets.Features(
+                {
+                    "text": datasets.Value("string"),
+                    "label": datasets.features.ClassLabel(names=self.config.classes),
+                }
+            )
 
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
@@ -137,7 +136,9 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
                     if line == "":
                         continue
                     label, text = self._extract_text_label_from_line(line, delim, label_enum_dict)
-
+                    if self.config.name == "mlm" and label != 1:
+                        # Only use crisis-related tweets for mlm target
+                        continue
                     yield i, {"text": text, "label": label}
             else:
                 for i, line in enumerate(f):
