@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Auto
     DataCollatorForWholeWordMask, DataCollatorForTokenClassification, TrainingArguments
 from datasets import load_dataset
 
-from src.utils import unzip_tar_file, download_data_from_url
+from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 
 
 def get_model_and_tokenizer(pre_trained_model, architecture, num_labels):
@@ -84,7 +84,7 @@ def get_data(cfg):
     data_dir = hydra.utils.to_absolute_path(os.path.join(cfg.data_path, cfg.data_subfolder))
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
-    dataset = load_dataset(hydra.utils.to_absolute_path("src/custom_datasets.py"),
+    dataset = load_dataset(os.path.join(get_project_root(), "src/custom_datasets.py"),
                            name=cfg.task if not cfg.debugging_mode else "debugging")
     print("Loaded dataset with", dataset)
     return dataset

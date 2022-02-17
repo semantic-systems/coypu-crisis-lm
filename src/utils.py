@@ -1,9 +1,13 @@
 import os
+from pathlib import Path
 import requests
 import tarfile
 
 import hydra
 
+
+def get_project_root() -> Path:
+    return Path(__file__).parent.parent
 
 def download_data_from_url(cfg):
     dest_path = hydra.utils.to_absolute_path(cfg.data_path)

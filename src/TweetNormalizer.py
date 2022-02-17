@@ -27,7 +27,7 @@ def normalizeToken(token):
 
 
 def normalizeTweet(tweet):
-    tweet = tweet.encode('ascii','ignore').decode("ascii")  # remove undecodable chars
+    tweet = tweet.encode('ascii', 'ignore').decode("ascii")  # remove undecodable chars
     tokens = tokenizer.tokenize(tweet.replace("’", "'").replace("…", "..."))
     normTweet = " ".join([normalizeToken(token) for token in tokens])
     normTweet = (

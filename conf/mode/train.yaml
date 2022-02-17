@@ -11,7 +11,7 @@ weight_decay: 0.1
 num_train_epochs: 60
 pad_to_max_length: False
 max_seq_length: None
-mlm_probability: 0.2
+mlm_probability: 0.15
 
 evaluation_strategy: "steps"
 eval_steps: 500
