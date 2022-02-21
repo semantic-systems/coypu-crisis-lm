@@ -6,8 +6,6 @@ import sys
 import datasets
 import hydra
 
-from src.TweetNormalizer import normalizeTweet
-
 
 _CITATION = """\@inproceedings{alam2020standardizing,
   title={CrisisBench: Benchmarking Crisis-related Social Media Datasets for Humanitarian Information Processing},
@@ -154,7 +152,6 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
     def _extract_text_label_from_line(self, line, delim, label_enum_dict):
         row = line.split(delim)
         text = row[3].strip()
-        text = normalizeTweet(text)
         label = row[6]
         label = label_enum_dict[label]
         return label, text
