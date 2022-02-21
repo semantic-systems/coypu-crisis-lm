@@ -10,7 +10,10 @@ from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 
 
 def get_model_and_tokenizer(pre_trained_model, architecture, num_labels):
-    tokenizer = AutoTokenizer.from_pretrained(pre_trained_model)
+    if "vinai/bertweet" in pre_trained_model:
+        tokenizer = AutoTokenizer.from_pretrained(pre_trained_model, normalization=True)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(pre_trained_model)
     if architecture == "mlm":
         model = AutoModelForMaskedLM.from_pretrained(pre_trained_model)
     elif architecture == "seq":

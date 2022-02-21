@@ -1,0 +1,2 @@
+name: "bertweet"
+pretrained_model: "bertweet-uncased"
