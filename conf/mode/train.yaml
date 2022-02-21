@@ -14,8 +14,9 @@ continue_training: False
 #mlm_probability: 0.15
 
 evaluation_strategy: "steps"
-eval_steps: 500
-logging_steps: 5000
+eval_steps: 1000
+save_steps: 20000
+logging_steps: 10000
 load_best_model_at_end: True
 early_stopping: True
 patience: 50
