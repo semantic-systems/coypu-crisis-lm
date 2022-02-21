@@ -52,6 +52,7 @@ def get_trainer_args(cfg, output_dir):
                                          evaluation_strategy=cfg.mode.evaluation_strategy,
                                          eval_steps=cfg.mode.eval_steps if
                                          cfg.mode.evaluation_strategy == "steps" else None,
+                                         save_steps=cfg.mode.save_steps,
                                          logging_steps=cfg.mode.logging_steps,
                                          load_best_model_at_end=cfg.mode.load_best_model_at_end,
                                          seed=cfg.seed,
