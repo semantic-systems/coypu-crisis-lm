@@ -3,7 +3,7 @@ import sys
 
 import hydra
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForMaskedLM, \
-    DataCollatorForWholeWordMask, DataCollatorForTokenClassification, TrainingArguments
+    DataCollatorForWholeWordMask, DataCollatorForTokenClassification, DataCollatorForLanguageModeling, TrainingArguments
 from datasets import load_dataset
 
 from src.utils import unzip_tar_file, download_data_from_url, get_project_root
@@ -25,7 +25,7 @@ def get_model_and_tokenizer(pre_trained_model, architecture, num_labels):
 
 def get_data_collator(architecture, tokenizer, mlm_probability):
     if architecture == "mlm":
-        data_collator = DataCollatorForWholeWordMask(tokenizer, mlm_probability)
+        data_collator = DataCollatorForLanguageModeling(tokenizer, mlm_probability)
     elif architecture == "seq":
         data_collator = DataCollatorForTokenClassification(tokenizer)
     else:

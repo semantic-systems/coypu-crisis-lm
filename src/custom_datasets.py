@@ -95,12 +95,19 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
     DEFAULT_CONFIG_NAME = "informativeness"
 
     def _info(self):
-        features = datasets.Features(
+        if self.config.name == "mlm":
+            features = datasets.Features(
                 {
                     "text": datasets.Value("string"),
-                    "label": datasets.features.ClassLabel(names=self.config.classes),
                 }
             )
+        else:
+            features = datasets.Features(
+                    {
+                        "text": datasets.Value("string"),
+                        "label": datasets.features.ClassLabel(names=self.config.classes),
+                    }
+                )
 
         return datasets.DatasetInfo(
             description=_DESCRIPTION,
@@ -139,8 +146,6 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
         else:
             sys.exit("Unknown file format. Make sure to use a .tsv or .csv dataset file.")
 
-
-        print("Labels", self.config.label_enum_dict)
         with open(filepath, "r", newline=None, encoding='utf-8', errors='replace') as f:
             next(f)  # skip head col
             if self.config.name != "debugging":
@@ -149,11 +154,15 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
                     if line == "":
                         continue
                     label, text = self._extract_text_label_from_line(line, delim)
-                    if self.config.name == "mlm" and label == 0:
+                    if self.config.name == "mlm":
+                        if label == 0:
                         # print("Not using example", text)
                         # Only use crisis-related tweets for mlm target
-                        continue
-                    yield i, {"text": text, "label": label}
+                            continue
+                        else:
+                            yield i, {"text": text}
+                    else:
+                        yield i, {"text": text, "label": label}
             else:
                 for i, line in enumerate(f):
                     if i < 5:
@@ -161,8 +170,13 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
                         if line == "":
                             continue
                         label, text = self._extract_text_label_from_line(line, delim)
-
-                        yield i, {"text": text, "label": label}
+                        if self.config.name == "mlm":
+                            if label == 0:
+                                continue
+                            else:
+                                yield i, {"text": text}
+                        else:
+                            yield i, {"text": text, "label": label}
 
     def _extract_text_label_from_line(self, line, delim):
         row = line.split(delim)
