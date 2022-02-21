@@ -9,7 +9,7 @@ per_device_eval_batch_size: 32
 learning_rate: 3e-5
 weight_decay: 0.1
 num_train_epochs: 60
-pad_to_max_length: False
+pad_to_max_length: True
 max_seq_length: None
 mlm_probability: 0.15
 
