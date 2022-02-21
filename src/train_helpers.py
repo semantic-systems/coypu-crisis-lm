@@ -9,7 +9,7 @@ from datasets import load_dataset
 from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 
 
-def get_model_and_tokenizer(pre_trained_model, architecture, num_labels):
+def get_model_and_tokenizer(pre_trained_model, architecture, num_labels=None):
     if "vinai/bertweet" in pre_trained_model:
         tokenizer = AutoTokenizer.from_pretrained(pre_trained_model, normalization=True)
     else:
@@ -18,12 +18,15 @@ def get_model_and_tokenizer(pre_trained_model, architecture, num_labels):
         model = AutoModelForMaskedLM.from_pretrained(pre_trained_model)
     elif architecture == "seq":
         model = AutoModelForSequenceClassification.from_pretrained(pre_trained_model, num_labels=num_labels)
+        # Freeze encoder
+        for param in model.base_model.parameters():
+            param.requires_grad = False
     else:
         sys.exit("Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
     return model, tokenizer
 
 
-def get_data_collator(architecture, tokenizer, mlm_probability):
+def get_data_collator(architecture, tokenizer, mlm_probability=None):
     if architecture == "mlm":
         data_collator = DataCollatorForLanguageModeling(tokenizer, mlm_probability)
     elif architecture == "seq":
