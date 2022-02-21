@@ -80,7 +80,9 @@ def train(cfg, logger):
                             len(line) > 0 and not line.isspace()]
         return tokenizer(examples["text"],
                          padding="max_length" if cfg.model.pad_to_max_length else False,
-                         truncation=True, max_length=cfg.model.max_seq_length)
+                         truncation=True, max_length=(cfg.model.max_seq_length if
+                                                      isinstance(cfg.model.max_seq_length,
+                                                                 int) else None))
 
     tokenized_dataset = dataset.map(
         tokenize_function,

@@ -8,7 +8,7 @@
 defaults:
   - _self_
   - mode: train # train, predict, train_downstream
-  - model: distilbert # see 'model' config subfolder for options
+  - model: bertweet # see 'model' config subfolder for options
 
 
 architecture: mlm # mlm, seq = sequence classification (& later adapter)

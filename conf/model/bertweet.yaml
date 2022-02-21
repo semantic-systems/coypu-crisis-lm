@@ -1,5 +1,5 @@
 name: "bertweet"
-pretrained_model: "bertweet-uncased"
+pretrained_model: "vinai/bertweet-base"
 
 learning_rate: 1e-4
 adam_beta1: 0.9
