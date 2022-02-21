@@ -70,7 +70,7 @@ def train(cfg, logger):
     model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
                                                2 if cfg.task == "informativeness" else 11)
     training_args = get_trainer_args(cfg, tmp_output_dir)
-    data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.mode.mlm_probability)
+    data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability)
 
     dataset = get_data(cfg)
 
@@ -79,8 +79,8 @@ def train(cfg, logger):
         examples["text"] = [line for line in examples["text"] if
                             len(line) > 0 and not line.isspace()]
         return tokenizer(examples["text"],
-                         padding="max_length" if cfg.mode.pad_to_max_length else False,
-                         truncation=True, max_length=None)
+                         padding="max_length" if cfg.model.pad_to_max_length else False,
+                         truncation=True, max_length=cfg.model.max_seq_length)
 
     tokenized_dataset = dataset.map(
         tokenize_function,

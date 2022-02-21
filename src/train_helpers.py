@@ -40,18 +40,20 @@ def get_trainer_args(cfg, output_dir):
                                          overwrite_output_dir=cfg.mode.continue_training,
                                          do_train=cfg.mode.do_train,
                                          do_eval=cfg.mode.do_eval,
-                                         per_device_train_batch_size=cfg.mode.per_device_train_batch_size if not cfg.debugging_mode else 1,
-                                         per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
+                                         per_device_train_batch_size=cfg.model.per_device_train_batch_size if not cfg.debugging_mode else 1,
+                                         per_device_eval_batch_size=cfg.model.per_device_eval_batch_size if not cfg.debugging_mode else 1,
                                          optim="adamw_torch",
-                                         learning_rate=cfg.mode.learning_rate,
-                                         weight_decay=cfg.mode.weight_decay,
-                                         num_train_epochs=cfg.mode.num_train_epochs,
+                                         learning_rate=cfg.model.learning_rate,
+                                         weight_decay=cfg.model.weight_decay,
+                                         adam_beta1=cfg.model.adam_beta1,
+                                         adam_beta2=cfg.model.adam_beta2,
+                                         warmup_steps=cfg.model.warmup_steps,
+                                         num_train_epochs=cfg.model.num_train_epochs,
                                          evaluation_strategy=cfg.mode.evaluation_strategy,
                                          eval_steps=cfg.mode.eval_steps if
                                          cfg.mode.evaluation_strategy == "steps" else None,
                                          logging_steps=cfg.mode.logging_steps,
-                                         load_best_model_at_end=(cfg.mode.evaluation_strategy ==
-                                                                 "steps"),
+                                         load_best_model_at_end=cfg.mode.load_best_model_at_end,
                                          seed=cfg.seed,
                                          fp16=cfg.gpu.fp16,
                                          fp16_opt_level=cfg.gpu.fp16_opt_level,
@@ -60,7 +62,7 @@ def get_trainer_args(cfg, output_dir):
     elif cfg.mode.name == "test":
         trainer_args = TrainingArguments(output_dir=output_dir,
                                          do_eval=cfg.mode.do_eval,
-                                         per_device_eval_batch_size=cfg.mode.per_device_eval_batch_size if not cfg.debugging_mode else 1,
+                                         per_device_eval_batch_size=cfg.model.per_device_eval_batch_size if not cfg.debugging_mode else 1,
                                          )
     else:
         sys.exit("Can't load trainer args bc. 'run mode' is neither set to 'train' nor 'test'")
