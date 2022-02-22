@@ -5,8 +5,12 @@ https://github.com/huggingface/transformers/blob/master/examples/research_projec
 import os
 import shutil
 import math
+import sys
 from pprint import pprint
 
+import numpy as np
+from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, \
+    classification_report, plot_confusion_matrix
 from transformers import (
     Trainer,
     EarlyStoppingCallback,
@@ -45,15 +49,34 @@ def _get_last_checkpoint(cfg, training_args, logger):
     return checkpoint
 
 
-def _eval_model(trainer, training_args, logger):
+def _classifier_metrics(p):
+    logits, labels = p
+    preds = np.argmax(logits, axis=1)
+    average = "macro"
+    accuracy = accuracy_score(y_true=labels, y_pred=preds)
+    recall = recall_score(y_true=labels, y_pred=preds, average=average)
+    precision = precision_score(y_true=labels, y_pred=preds, average=average)
+    f1 = f1_score(y_true=labels, y_pred=preds, average=average)
+    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
+
+
+def _eval_model(cfg, trainer, training_args, logger):
     results = {}
     if training_args.do_eval:
         logger.info("*** Evaluate on validation set ***")
 
         eval_output = trainer.evaluate()
-
-        perplexity = math.exp(eval_output["eval_loss"])
-        results["perplexity"] = perplexity
+        print(eval_output)
+        if cfg.architecture == "mlm":
+            perplexity = math.exp(eval_output["eval_loss"])
+            results["perplexity"] = perplexity
+        elif cfg.architecture == "seq":
+            results["accuracy"] = eval_output["eval_accuracy"]
+            results["precision"] = eval_output["eval_precision"]
+            results["recall"] = eval_output["eval_recall"]
+            results["f1"] = eval_output["eval_f1"]
+        else:
+            sys.exit()
 
         output_eval_file = os.path.join(training_args.output_dir, "eval_results.txt")
         if trainer.is_world_process_zero():
@@ -67,12 +90,21 @@ def _eval_model(trainer, training_args, logger):
 
 
 def train(cfg, logger):
-    model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
-                                               2 if cfg.task == "informativeness" else 11)
-    training_args = get_trainer_args(cfg, tmp_output_dir)
-    data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability)
+    if cfg.architecture == "mlm":
+        model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture)
+        data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability)
+        compute_metrics = None
+    elif cfg.architecture == "seq":
+        model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
+                                                   2 if cfg.task == "informativeness" else 11)
+        data_collator = None
+        compute_metrics = _classifier_metrics
+    else:
+        sys.exit("Architecture style not implemented.")
 
+    training_args = get_trainer_args(cfg, tmp_output_dir)
     dataset = get_data(cfg)
+    print(dataset)
 
     def tokenize_function(examples):
         # Remove empty lines
@@ -109,6 +141,7 @@ def train(cfg, logger):
         args=training_args,
         train_dataset=tokenized_dataset["train"] if training_args.do_train else None,
         eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None,
+        compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         data_collator=data_collator,
         callbacks=callbacks
@@ -117,11 +150,15 @@ def train(cfg, logger):
     checkpoint = _get_last_checkpoint(cfg, training_args, logger)
     train_result = trainer.train(resume_from_checkpoint=checkpoint)
 
+    # For development. Check which layers are not frozen:
+    for name, param in model.named_parameters():
+        print(name, param.requires_grad)
+
     if cfg.mode.save_model:
         trainer.save_model()
 
     save_model_state(logger, train_result, trainer, training_args)
-    results = _eval_model(trainer, training_args, logger)
+    results = _eval_model(cfg, trainer, training_args, logger)
 
     # Move all stored artifacts to mlflow run
     artifacts_dir = get_current_artifacts_dir(cfg)
