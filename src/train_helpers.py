@@ -58,7 +58,7 @@ def get_trainer_args(cfg, output_dir):
                                          save_steps=cfg.mode.save_steps,
                                          logging_steps=cfg.mode.logging_steps,
                                          load_best_model_at_end=cfg.mode.load_best_model_at_end,
-                                         seed=cfg.seed,
+                                         seed=cfg.model_seed,
                                          fp16=cfg.gpu.fp16,
                                          fp16_opt_level=cfg.gpu.fp16_opt_level,
                                          half_precision_backend=cfg.gpu.half_precision_backend,

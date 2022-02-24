@@ -104,6 +104,7 @@ def train(cfg, logger):
 
     training_args = get_trainer_args(cfg, tmp_output_dir)
     dataset = get_data(cfg)
+    dataset = dataset.shuffle(cfg.data_seed)
     print(dataset)
 
     def tokenize_function(examples):
