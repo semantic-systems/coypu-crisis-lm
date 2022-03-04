@@ -19,8 +19,8 @@ def get_model_and_tokenizer(pre_trained_model, architecture, num_labels=None):
     elif architecture == "seq":
         model = AutoModelForSequenceClassification.from_pretrained(pre_trained_model, num_labels=num_labels)
         # Freeze encoder
-        for param in model.base_model.parameters():
-            param.requires_grad = False
+        #for param in model.base_model.parameters():
+        #    param.requires_grad = False
     else:
         sys.exit("Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
     return model, tokenizer
@@ -40,7 +40,7 @@ def get_data_collator(architecture, tokenizer, mlm_probability=None):
 def get_trainer_args(cfg, output_dir):
     if cfg.mode.name == "train":
         trainer_args = TrainingArguments(output_dir=output_dir,
-                                         overwrite_output_dir=cfg.mode.continue_training,
+                                         overwrite_output_dir=cfg.mode.overwrite_output_dir,
                                          do_train=cfg.mode.do_train,
                                          do_eval=cfg.mode.do_eval,
                                          per_device_train_batch_size=cfg.model.per_device_train_batch_size if not cfg.debugging_mode else 1,

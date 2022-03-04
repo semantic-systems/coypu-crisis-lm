@@ -17,6 +17,7 @@ def run(cfg: DictConfig):
     # Otherwise they would be stored separately for each hydra run
     mlruns_folder = os.path.join(get_project_root(), cfg.mlruns_dir)
     mlflow.set_tracking_uri(f"file:{mlruns_folder}")
+    mlflow.set_experiment(f"model={cfg.model.name}_task={cfg.task}_modelseed={cfg.model_seed}")
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     #warnings.filterwarnings("ignore")

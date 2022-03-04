@@ -145,10 +145,12 @@ def train(cfg, logger):
         compute_metrics=compute_metrics,
         tokenizer=tokenizer,
         data_collator=data_collator,
-        callbacks=callbacks
+        callbacks=callbacks,
     )
-
-    checkpoint = _get_last_checkpoint(cfg, training_args, logger)
+    if cfg.mode.continue_training:
+        checkpoint = _get_last_checkpoint(cfg, training_args, logger)
+    else:
+        checkpoint = None
     train_result = trainer.train(resume_from_checkpoint=checkpoint)
 
     # For development. Check which layers are not frozen:
@@ -162,12 +164,12 @@ def train(cfg, logger):
     results = _eval_model(cfg, trainer, training_args, logger)
 
     # Move all stored artifacts to mlflow run
-    artifacts_dir = get_current_artifacts_dir(cfg)
-    for file_name in os.listdir(tmp_output_dir):
-        shutil.move(os.path.join(tmp_output_dir, file_name), artifacts_dir)
-        shutil.copy(os.path.join(".hydra", "config.yaml"),
-                    os.path.join(artifacts_dir, "config.yaml"))
-    os.rmdir(tmp_output_dir)
+    #artifacts_dir = get_current_artifacts_dir(cfg)
+    #for file_name in os.listdir(tmp_output_dir):
+    #    shutil.move(os.path.join(tmp_output_dir, file_name), artifacts_dir)
+    #    shutil.copy(os.path.join(".hydra", "config.yaml"),
+    #                os.path.join(artifacts_dir, "config.yaml"))
+    #os.rmdir(tmp_output_dir)
 
     return results
 
