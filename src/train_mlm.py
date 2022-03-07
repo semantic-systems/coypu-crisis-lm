@@ -91,12 +91,12 @@ def _eval_model(cfg, trainer, training_args, logger):
 
 def train(cfg, logger):
     if cfg.architecture == "mlm":
-        model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture)
+        model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture, cfg.mode.freeze_encoder)
         data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability)
         compute_metrics = None
     elif cfg.architecture == "seq":
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
-                                                   2 if cfg.task == "informativeness" else 11)
+                                                   cfg.mode.freeze_encoder, 2 if cfg.task == "informativeness" else 11)
         data_collator = None
         compute_metrics = _classifier_metrics
     else:

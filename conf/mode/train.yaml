@@ -15,6 +15,7 @@ overwrite_output_dir: False
 #mlm_probability: 0.15
 
 evaluation_strategy: "steps"
+freeze_encoder: True # only applied if "architecture=seq"
 eval_steps: 1000
 save_steps: 20000
 logging_steps: 1000

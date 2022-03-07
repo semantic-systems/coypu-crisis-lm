@@ -9,7 +9,7 @@ from datasets import load_dataset
 from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 
 
-def get_model_and_tokenizer(pre_trained_model, architecture, num_labels=None):
+def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, num_labels=None):
     if "vinai/bertweet" in pre_trained_model:
         tokenizer = AutoTokenizer.from_pretrained(pre_trained_model, normalization=True)
     else:
@@ -19,8 +19,9 @@ def get_model_and_tokenizer(pre_trained_model, architecture, num_labels=None):
     elif architecture == "seq":
         model = AutoModelForSequenceClassification.from_pretrained(pre_trained_model, num_labels=num_labels)
         # Freeze encoder
-        #for param in model.base_model.parameters():
-        #    param.requires_grad = False
+        if freeze_encoder:
+            for param in model.base_model.parameters():
+                param.requires_grad = False
     else:
         sys.exit("Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
     return model, tokenizer
@@ -28,9 +29,9 @@ def get_model_and_tokenizer(pre_trained_model, architecture, num_labels=None):
 
 def get_data_collator(architecture, tokenizer, mlm_probability=None):
     if architecture == "mlm":
-        data_collator = DataCollatorForLanguageModeling(tokenizer, mlm_probability)
+        data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability)
     elif architecture == "seq":
-        data_collator = DataCollatorForTokenClassification(tokenizer)
+        data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
     else:
         sys.exit(
             "Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
