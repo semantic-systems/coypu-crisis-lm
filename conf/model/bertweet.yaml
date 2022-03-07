@@ -11,5 +11,6 @@ num_train_epochs: 100
 pad_to_max_length: True
 max_seq_length: None
 mlm_probability: 0.40
+uniform_masking: True
 per_device_train_batch_size: 64
 per_device_eval_batch_size: 64

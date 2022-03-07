@@ -83,7 +83,15 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
             filename="informativeness",
         ),
         CrisisBenchBuilderConfig(
-            name="debugging",
+            name="debugging_seq",
+            version=VERSION,
+            description="tiny_debugging_sample",
+            classes=['not_informative', 'informative'],
+            label_enum_dict={'not_informative': 0, 'informative': 1},
+            filename="informativeness",
+        ),
+        CrisisBenchBuilderConfig(
+            name="debugging_mlm",
             version=VERSION,
             description="tiny_debugging_sample",
             classes=['not_informative', 'informative'],
@@ -95,7 +103,7 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
     DEFAULT_CONFIG_NAME = "informativeness"
 
     def _info(self):
-        if self.config.name == "mlm":
+        if self.config.name == "mlm" or self.config.name == "debugging_mlm":
             features = datasets.Features(
                 {
                     "text": datasets.Value("string"),
@@ -148,7 +156,21 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
 
         with open(filepath, "r", newline=None, encoding='utf-8', errors='replace') as f:
             next(f)  # skip head col
-            if self.config.name != "debugging":
+            if self.config.name.startswith("debugging"):
+                for i, line in enumerate(f):
+                    if i < 5:
+                        line = line.strip()
+                        if line == "":
+                            continue
+                        label, text = self._extract_text_label_from_line(line, delim)
+                        if "mlm" in self.config.name:
+                            if label == 0:
+                                continue
+                            else:
+                                yield i, {"text": text}
+                        else:
+                            yield i, {"text": text, "label": label}
+            else:
                 for i, line in enumerate(f):
                     line = line.strip()
                     if line == "":
@@ -163,20 +185,7 @@ class CrisisBenchDataset(datasets.GeneratorBasedBuilder):
                             yield i, {"text": text}
                     else:
                         yield i, {"text": text, "label": label}
-            else:
-                for i, line in enumerate(f):
-                    if i < 5:
-                        line = line.strip()
-                        if line == "":
-                            continue
-                        label, text = self._extract_text_label_from_line(line, delim)
-                        if self.config.name == "mlm":
-                            if label == 0:
-                                continue
-                            else:
-                                yield i, {"text": text}
-                        else:
-                            yield i, {"text": text, "label": label}
+
 
     def _extract_text_label_from_line(self, line, delim):
         row = line.split(delim)

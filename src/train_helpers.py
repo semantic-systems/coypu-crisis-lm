@@ -7,6 +7,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Auto
 from datasets import load_dataset
 
 from src.utils import unzip_tar_file, download_data_from_url, get_project_root
+from src.custom_data_collator_mlm import CustomDataCollatorForLanguageModeling
 
 
 def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, num_labels=None):
@@ -27,9 +28,11 @@ def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, num
     return model, tokenizer
 
 
-def get_data_collator(architecture, tokenizer, mlm_probability=None):
+def get_data_collator(architecture, tokenizer, mlm_probability=None, uniform_masking=False):
     if architecture == "mlm":
-        data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=mlm_probability)
+        data_collator = CustomDataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True,
+                                                              mlm_probability=mlm_probability,
+                                                              uniform_masking=uniform_masking)
     elif architecture == "seq":
         data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
     else:
@@ -94,7 +97,14 @@ def get_data(cfg):
     data_dir = hydra.utils.to_absolute_path(os.path.join(cfg.data_path, cfg.data_subfolder))
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
+    if cfg.debugging_mode:
+        if cfg.architecture == "mlm":
+            config_name = "debugging_mlm"
+        else:
+            config_name = "debugging_seq"
+    else:
+        config_name = cfg.task
     dataset = load_dataset(os.path.join(get_project_root(), "src/custom_datasets.py"),
-                           name=cfg.task if not cfg.debugging_mode else "debugging")
+                           name=config_name)
     print("Loaded dataset with", dataset)
     return dataset

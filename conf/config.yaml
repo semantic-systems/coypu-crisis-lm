@@ -28,4 +28,4 @@ gpu:
     fp16_opt_level: O2 # letter O not number zero # info on https://nvidia.github.io/apex/amp.html
     half_precision_backend: auto
 
-debugging_mode: False # in debugging mode, the whole pipeline is run on a single sample
+debugging_mode: False # in debugging mode, the whole pipeline is run on a few samples

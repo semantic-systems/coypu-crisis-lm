@@ -92,7 +92,8 @@ def _eval_model(cfg, trainer, training_args, logger):
 def train(cfg, logger):
     if cfg.architecture == "mlm":
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture, cfg.mode.freeze_encoder)
-        data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability)
+        data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability,
+                                          cfg.model.uniform_masking)
         compute_metrics = None
     elif cfg.architecture == "seq":
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
