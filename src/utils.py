@@ -9,6 +9,7 @@ import hydra
 def get_project_root() -> Path:
     return Path(__file__).parent.parent
 
+
 def download_data_from_url(cfg):
     dest_path = hydra.utils.to_absolute_path(cfg.data_path)
     os.makedirs(dest_path, exist_ok=True)
@@ -33,7 +34,9 @@ def unzip_tar_file(filename):
         tar = tarfile.open(filename, "r:")
         tar.extractall(path=out_path)
         tar.close()
+    os.remove(filename)
     print("Done unzipping.")
+    os.remove()
 
 
 def get_current_artifacts_dir(cfg):

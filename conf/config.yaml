@@ -15,7 +15,7 @@ architecture: mlm # mlm, seq = sequence classification (& later adapter)
 mlruns_dir: mlruns
 
 overwrite_data_cache: True
-data_path: data_cls # high-level data folder
+data_path: data # high-level data folder
 data_subfolder: data/all_data_en # experiment-specific subfolder of the crisis-bench dataset
 download_url: https://crisisnlp.qcri.org/data/crisis_datasets_benchmarks/crisis_datasets_benchmarks_v1.0.tar.gz
 task: mlm # mlm, informativeness or humanitarian
