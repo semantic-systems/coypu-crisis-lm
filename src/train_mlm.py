@@ -22,8 +22,7 @@ from src.train_helpers import get_model_and_tokenizer, get_data_collator, get_tr
 from src.utils import get_current_artifacts_dir
 from src.custom_mlflow_callback import CustomMLflowCallback
 
-tmp_output_dir = "tmp"
-# os.makedirs(tmp_output_dir, exist_ok=True)
+artifacts_output_dir = "artifacts"
 
 
 def _get_last_checkpoint(cfg, training_args, logger):
@@ -103,7 +102,7 @@ def train(cfg, logger):
     else:
         sys.exit("Architecture style not implemented.")
 
-    training_args = get_trainer_args(cfg, tmp_output_dir)
+    training_args = get_trainer_args(cfg, artifacts_output_dir)
     dataset = get_data(cfg)
     dataset = dataset.shuffle(cfg.data_seed)
     print(dataset)
