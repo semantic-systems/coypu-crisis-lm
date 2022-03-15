@@ -1,16 +1,18 @@
 name: "bertweet"
-pretrained_model: "vinai/bertweet-base"
+pretrained_model: /export/home/kraft/CrisisLM/CrisisLM/outputs/2022-03-14/08-46-24/artifacts/
+  #/export/home/kraft/CrisisLM/CrisisLM/outputs/2022-03-09/18-42-56/tmp # ep=150, lr=1.5, mlmpr=15, uniform
+  #"vinai/bertweet-base"
   #/export/home/kraft/infhome/CrisisLM/outputs/2022-03-03/19-52-08/tmp/checkpoint-20000
 
-learning_rate: 1e-5 # 1e-4
+learning_rate: 1e-4 # 1e-4
 adam_beta1: 0.9
 adam_beta2: 0.999
 weight_decay: 0.01
 warmup_steps: 10000
-num_train_epochs: 150
+num_train_epochs: 5
 pad_to_max_length: True
 max_seq_length: None
-mlm_probability: 0.15
+mlm_probability: 0.40
 uniform_masking: True
-per_device_train_batch_size: 64
-per_device_eval_batch_size: 64
+per_device_train_batch_size: 128
+per_device_eval_batch_size: 128

@@ -8,6 +8,7 @@ import hydra
 from omegaconf import DictConfig
 
 from src.train_mlm import train
+from src.mlm_inference import run_mlm_inference
 from src.utils import get_project_root
 
 
@@ -23,11 +24,11 @@ def run(cfg: DictConfig):
     #warnings.filterwarnings("ignore")
 
     if cfg.mode.name == "train":
+        print("Launching train mode:")
         train(cfg, logger)
-    elif cfg.mode.name == "eval":
-        pass
-    elif cfg.mode.name == "predict":
-        pass
+    elif cfg.mode.name == "mlm_inference":
+        print("Launching inference mode:")
+        run_mlm_inference(cfg, logger)
 
 
 if __name__ == "__main__":

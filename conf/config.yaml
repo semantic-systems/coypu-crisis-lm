@@ -7,7 +7,7 @@
 
 defaults:
   - _self_
-  - mode: train # train, predict, train_downstream
+  - mode: mlm_inference # train, mlm_inference
   - model: bertweet # see 'model' config subfolder for options
 
 

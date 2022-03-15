@@ -1,0 +1,4 @@
+name: "mlm_inference"
+
+inference_mode: "interactive" # "interactive" (enter sentence via UI) versus "file" (from file, e.g. test set)
+file_path: "" # path to file with inference input
