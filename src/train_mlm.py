@@ -17,7 +17,7 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 
-from src.train_helpers import get_model_and_tokenizer, get_data_collator, get_trainer_args, \
+from src.helpers import get_model_and_tokenizer, get_data_collator, get_trainer_args, \
     save_model_state, get_data
 from src.utils import get_current_artifacts_dir
 from src.custom_mlflow_callback import CustomMLflowCallback
@@ -90,7 +90,12 @@ def _eval_model(cfg, trainer, training_args, logger):
 
 def train(cfg, logger):
     if cfg.architecture == "mlm":
-        model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture, cfg.mode.freeze_encoder)
+        if cfg.model.name == "bertweet":
+            normalization = True
+        else:
+            normalization = False
+        model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
+                                                   cfg.mode.freeze_encoder, normalization=normalization)
         data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability,
                                           cfg.model.uniform_masking)
         compute_metrics = None

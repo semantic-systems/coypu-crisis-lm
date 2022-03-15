@@ -10,8 +10,8 @@ from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 from src.custom_data_collator_mlm import CustomDataCollatorForLanguageModeling
 
 
-def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, num_labels=None):
-    if "vinai/bertweet" in pre_trained_model:
+def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, normalization=False, num_labels=None):
+    if normalization:
         tokenizer = AutoTokenizer.from_pretrained(pre_trained_model, normalization=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(pre_trained_model)
