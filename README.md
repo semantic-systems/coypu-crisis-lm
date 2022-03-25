@@ -22,10 +22,11 @@ Evaluation of the embeddings is done via
 
 ## Running the MLM demo
 Get the CoyPu CrisisLM model version 1 [here](https://drive.google.com/file/d/1lzEFkWOOqk2X33oZHFTPa0kQyPX-fhJC/view?usp=sharing).
+Unzip and provide path as described below.
 
 Configure as follows:
 `/conf/mode/mlm_inference.yaml`: `inference_mode: "interactive"`
-`/conf/model/bertweet.yaml`: `pretrained_model: PATH TO FILE OR DOWNLOAD LINK`
+`/conf/model/bertweet.yaml`: `pretrained_model: PATH TO MODEL FOLDER`
 `/conf/config.yaml`: `defaults: 
                         - mode: mlm_inference
                         - model: bertweet`
