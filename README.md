@@ -16,6 +16,18 @@ This repository will experiment with different domain-/task-adapting fine-tuning
 
 ## Evaluation
 Evaluation of the embeddings is done via 
-* MLM perplexity
+* MLM perplexity 
 * Downstream task performance on the CrisisBench benchmark
 * Additional CoyPu-specific downstream tasks: e.g., event detection
+
+## Running the MLM demo
+Get the CoyPu CrisisLM model version 1 [here](https://drive.google.com/file/d/1lzEFkWOOqk2X33oZHFTPa0kQyPX-fhJC/view?usp=sharing).
+
+Configure as follows:
+`/conf/mode/mlm_inference.yaml`: `inference_mode: "interactive"`
+`/conf/model/bertweet.yaml`: `pretrained_model: PATH TO FILE OR DOWNLOAD LINK`
+`/conf/config.yaml`: `defaults: 
+                        - mode: mlm_inference
+                        - model: bertweet`
+
+Then simply run `python main.py`.
