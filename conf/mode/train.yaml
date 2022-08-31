@@ -17,7 +17,7 @@ overwrite_output_dir: False
 evaluation_strategy: "steps"
 freeze_encoder: False # only applied if "architecture=seq"
 eval_steps: 1000
-save_steps: 5000
+save_steps: 10000
 logging_steps: 1000
 load_best_model_at_end: True
 early_stopping: False

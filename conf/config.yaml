@@ -7,18 +7,18 @@
 
 defaults:
   - _self_
-  - mode: mlm_inference # train, mlm_inference
+  - mode: train # train, mlm_inference
   - model: bertweet # see 'model' config subfolder for options
 
 
-architecture: mlm # mlm, seq = sequence classification (& later adapter)
+architecture: seq # mlm, seq = sequence classification, adap_mlm, adap_seq (adap = adapter)
 mlruns_dir: mlruns
 
 overwrite_data_cache: True
 data_path: data # high-level data folder
 data_subfolder: data/all_data_en # experiment-specific subfolder of the crisis-bench dataset
 download_url: https://crisisnlp.qcri.org/data/crisis_datasets_benchmarks/crisis_datasets_benchmarks_v1.0.tar.gz
-task: mlm # mlm, informativeness or humanitarian
+task: humanitarian # mlm, informativeness or humanitarian
 language: EN # EN or DE (latter to be implemented)
 model_seed: 42
 data_seed: 42

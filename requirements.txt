@@ -1,3 +1,4 @@
+adapter-transformers
 bidict
 datasets
 emoji

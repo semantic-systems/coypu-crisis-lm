@@ -2,7 +2,7 @@ import os
 import sys
 
 import hydra
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForMaskedLM, \
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoModelForMaskedLM, AutoAdapterModel, \
     DataCollatorForWholeWordMask, DataCollatorForTokenClassification, DataCollatorForLanguageModeling, TrainingArguments
 from datasets import load_dataset
 
@@ -10,7 +10,8 @@ from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 from src.custom_data_collator_mlm import CustomDataCollatorForLanguageModeling
 
 
-def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, normalization=False, num_labels=None):
+def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, normalization=False, num_labels=None,
+                            task_name=""):
     if normalization:
         tokenizer = AutoTokenizer.from_pretrained(pre_trained_model, normalization=True)
     else:
@@ -23,6 +24,12 @@ def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, nor
         if freeze_encoder:
             for param in model.base_model.parameters():
                 param.requires_grad = False
+    elif architecture == "adap_seq":
+        model = AutoAdapterModel.from_pretrained(pre_trained_model)
+        model.add_classification_head(task_name, num_labels=num_labels)
+    elif architecture == "adap_mlm":
+        model = AutoAdapterModel.from_pretrained(pre_trained_model)
+        model.add_masked_lm_head("mlm")
     else:
         sys.exit("Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
     return model, tokenizer

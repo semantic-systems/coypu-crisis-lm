@@ -56,7 +56,8 @@ def _classifier_metrics(p):
     recall = recall_score(y_true=labels, y_pred=preds, average=average)
     precision = precision_score(y_true=labels, y_pred=preds, average=average)
     f1 = f1_score(y_true=labels, y_pred=preds, average=average)
-    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
+    f1_weighted = f1_score(y_true=labels, y_pred=preds, average="weighted")
+    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1, "f1_weighted": f1_weighted}
 
 
 def _eval_model(cfg, trainer, training_args, logger):
@@ -74,6 +75,7 @@ def _eval_model(cfg, trainer, training_args, logger):
             results["precision"] = eval_output["eval_precision"]
             results["recall"] = eval_output["eval_recall"]
             results["f1"] = eval_output["eval_f1"]
+            results["f1_weighted"] = eval_output["eval_f1_weighted"]
         else:
             sys.exit()
 

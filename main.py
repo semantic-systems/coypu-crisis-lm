@@ -7,7 +7,7 @@ import mlflow
 import hydra
 from omegaconf import DictConfig
 
-from src.train_mlm import train
+from src.train import train
 from src.mlm_inference import run_mlm_inference
 from src.utils import get_project_root
 
