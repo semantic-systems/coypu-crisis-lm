@@ -1,5 +1,5 @@
 name: "mlm_inference"
 
-inference_mode: "file" # "interactive" (enter sentence via UI) versus "file" (from file, e.g. test set)
-input_path: "data/data/all_data_en/crisis_consolidated_humanitarian_filtered_lang_en_test.tsv" # path to file with inference input
+inference_mode: "interactive" # "interactive" (enter sentence via UI) versus "file" (from file, e.g. test set)
+input_path: "/media/angelie/Samsung_T5/crisislm_expresults/data/all_data_en/crisis_consolidated_humanitarian_filtered_lang_en_test.tsv" # path to file with inference input
 output_path: "inference_output"

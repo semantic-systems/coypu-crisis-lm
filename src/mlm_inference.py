@@ -11,7 +11,8 @@ from src.TweetNormalizer import normalizeTweet
 
 def run_mlm_inference(cfg, logger):
     mask_filler_pipeline = pipeline("fill-mask", model=cfg.model.pretrained_model)
-    output_path = hydra.utils.to_absolute_path(cfg.mode.output_path)
+    #output_path = hydra.utils.to_absolute_path(cfg.mode.output_path)
+    output_path = cfg.mode.output_path
     os.makedirs(output_path, exist_ok=True)
     if cfg.mode.inference_mode == "file":
         _apply_to_file(mask_filler_pipeline, cfg.mode.input_path, output_path)
@@ -70,7 +71,7 @@ def _apply_to_user_input(mask_filler_pipeline, output_path):
     out_file = os.path.join(output_path, f"inferred_from_ui.tsv")
     print("--- MLM demo ---")
     print("In order to try out the mask filler, type in any sentence and replace the word to be guessed with <mask>. "
-          "Then press ENTER. Note: Your input must not exceed 280 characters.")
+          "\nThen press ENTER. Note: Your input must not exceed 280 characters.")
     print("Enter Q to quit.")
     while True:
         with open(out_file, "a") as o:
@@ -81,8 +82,11 @@ def _apply_to_user_input(mask_filler_pipeline, output_path):
             user_input = normalizeTweet(user_input)
             model_output = mask_filler_pipeline(user_input)
             print("Output:")
-            pprint(model_output)
-            top_outputs = [f"({result['token_str']}, {round(result['score'], 3)})" for result in model_output]
+            for i, output in enumerate(model_output[:3]):
+                print(f"{i+1}.: {output['token_str'].replace(' ', '')} ({round(output['score'], 3)})")
+
+            top_outputs = [f"({result['token_str'].replace(' ', '')}, {round(result['score'], 3)})" for result in
+                           model_output]
             top_outputs_str = "\t".join(top_outputs)
             o.write(f"{user_input}\t{top_outputs_str}\n")
 

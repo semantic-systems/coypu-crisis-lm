@@ -1,8 +1,12 @@
 name: "bertweet"
-pretrained_model: /export/home/kraft/CrisisLM/CrisisLM/outputs/2022-03-14/08-46-24/artifacts/
+pretrained_model: /media/angelie/Samsung_T5/crisislm_expresults/mar16/outputs/2022-03-14/08-46-24/artifacts/
+  #/media/angelie/Samsung_T5/crisislm_expresults/mar16/outputs/2022-03-16/11-44-59/artifacts
+ #ep=150,lr=1.5,mlmpr=40,uniform
+  #/export/home/kraft/CrisisLM/CrisisLM/outputs/2022-03-14/08-46-24/artifacts/
+  #ep=100,lr=1.5,mlmpr=40,uniform
   #/export/home/kraft/CrisisLM/CrisisLM/outputs/2022-03-09/18-42-56/tmp # ep=150, lr=1.5, mlmpr=15, uniform
   #"vinai/bertweet-base"
-  #/export/home/kraft/infhome/CrisisLM/outputs/2022-03-03/19-52-08/tmp/checkpoint-20000
+
 
 learning_rate: 1e-4 # 1e-4
 adam_beta1: 0.9
