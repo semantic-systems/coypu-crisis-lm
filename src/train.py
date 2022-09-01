@@ -13,12 +13,13 @@ from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_sc
     classification_report, plot_confusion_matrix
 from transformers import (
     Trainer,
+    AdapterTrainer,
     EarlyStoppingCallback,
 )
 from transformers.trainer_utils import get_last_checkpoint
 
-from src.helpers import get_model_and_tokenizer, get_data_collator, get_trainer_args, \
-    save_model_state, get_data
+from src.load_data import get_data_collator, get_data
+from src.load_save_model import get_model_and_tokenizer, get_trainer_args, save_model_state
 from src.utils import get_current_artifacts_dir
 from src.custom_mlflow_callback import CustomMLflowCallback
 
@@ -95,16 +96,17 @@ def train(cfg, logger):
         normalization = True
     else:
         normalization = False
-    if cfg.architecture == "mlm":
+    if cfg.architecture in ["mlm", "adap_mlm"]:
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
                                                    cfg.mode.freeze_encoder, normalization=normalization)
         data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability,
                                           cfg.model.uniform_masking)
         compute_metrics = None
-    elif cfg.architecture == "seq":
+    elif cfg.architecture in ["seq", "adap_seq"]:
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
                                                    cfg.mode.freeze_encoder, normalization=normalization,
-                                                   num_labels=2 if cfg.task == "informativeness" else 11)
+                                                   num_labels=2 if cfg.task == "informativeness" else 11,
+                                                   task_name=cfg.task)
         data_collator = None
         compute_metrics = _classifier_metrics
     else:
@@ -145,16 +147,26 @@ def train(cfg, logger):
         callbacks += [early_stopping_cb]
 
     # Setup trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_dataset["train"] if training_args.do_train else None,
-        eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None,
-        compute_metrics=compute_metrics,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-        callbacks=callbacks,
-    )
+    if "adap" in cfg.architecture:
+        trainer = AdapterTrainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_dataset["train"] if training_args.do_train else None,
+            eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+        )
+    else:
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_dataset["train"] if training_args.do_train else None,
+            eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None,
+            compute_metrics=compute_metrics,
+            tokenizer=tokenizer,
+            data_collator=data_collator,
+            callbacks=callbacks,
+        )
     if cfg.mode.continue_training:
         checkpoint = _get_last_checkpoint(cfg, training_args, logger)
     else:
