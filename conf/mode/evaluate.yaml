@@ -1,0 +1,7 @@
+name: "evaluate"
+
+do_train: False
+do_eval: True
+
+
+

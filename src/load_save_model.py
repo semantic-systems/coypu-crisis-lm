@@ -1,39 +1,42 @@
 import os
 import sys
 
-from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForSequenceClassification, AutoAdapterModel,\
-    AdapterConfig, TrainingArguments
+from transformers import AutoTokenizer, AutoModelForMaskedLM, AutoModelForSequenceClassification,\
+    AutoAdapterModel, AdapterConfig, TrainingArguments
 
 
-def get_model_and_tokenizer(pre_trained_model, architecture, freeze_encoder, normalization=False, num_labels=None,
-                            task_name=""):
+def get_model_and_tokenizer(pretrained_model, architecture, freeze_encoder, pretrained_adapter, do_train=True,
+                            normalization=False, num_labels=None, task_name=""):
     if normalization:
-        tokenizer = AutoTokenizer.from_pretrained(pre_trained_model, normalization=True)
+        tokenizer = AutoTokenizer.from_pretrained(pretrained_model, normalization=True)
     else:
-        tokenizer = AutoTokenizer.from_pretrained(pre_trained_model)
+        tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
     if architecture == "mlm":
-        model = AutoModelForMaskedLM.from_pretrained(pre_trained_model)
+        model = AutoModelForMaskedLM.from_pretrained(pretrained_model)
     elif architecture == "seq":
-        model = AutoModelForSequenceClassification.from_pretrained(pre_trained_model, num_labels=num_labels)
+        model = AutoModelForSequenceClassification.from_pretrained(pretrained_model, num_labels=num_labels)
         # Freeze encoder
         if freeze_encoder:
             for param in model.base_model.parameters():
                 param.requires_grad = False
     elif "adap" in architecture:
-        model = get_adapter(pre_trained_model, architecture, task_name, num_labels)
+        model = get_adapter(pretrained_model, architecture, task_name, pretrained_adapter, do_train, num_labels)
     else:
         sys.exit("Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
     return model, tokenizer
 
-
-def get_adapter(pre_trained_model, architecture, task_name, num_labels=None):
+def get_adapter(pretrained_model, architecture, task_name, pretrained_adapter, do_train, num_labels=None):
+    # Train an Adapter via AdapterHub, https://adapterhub.ml/
+    # https://docs.adapterhub.ml/training.html
+    # - bottleneck size 48 (compression rate 16 - performance-wise sweet spot
+    # - Pfeiffer variant (one bottleneck)
     # https://github.com/adapter-hub/adapter-transformers/blob/master/examples/pytorch/text-classification/run_glue.py
     if architecture == "adap_mlm":
-        model = AutoAdapterModel.from_pretrained(pre_trained_model)
-        model.add_masked_lm_head("mlm")
+        model = AutoAdapterModel.from_pretrained(pretrained_model)
+        model.add_masked_lm_head(task_name) # add head
     elif architecture == "adap_seq":
-        model = AutoAdapterModel.from_pretrained(pre_trained_model)
-        model.add_classification_head(task_name, num_labels=num_labels)
+        model = AutoAdapterModel.from_pretrained(pretrained_model)
+        model.add_classification_head(task_name, num_labels=num_labels) # add head
     # task adapter - only add if not existing
     if task_name not in model.config.adapters:
         # resolve the adapter config
@@ -78,8 +81,8 @@ def get_trainer_args(cfg, output_dir):
                                          load_best_model_at_end=cfg.mode.load_best_model_at_end,
                                          seed=cfg.model_seed,
                                          fp16=cfg.gpu.fp16,
-                                         fp16_opt_level=cfg.gpu.fp16_opt_level,
-                                         half_precision_backend=cfg.gpu.half_precision_backend,
+                                         fp16_opt_level=cfg.gpu.fp16_opt_level if cfg.gpu.fp16 else None,
+                                         half_precision_backend=cfg.gpu.half_precision_backend if cfg.gpu.fp16 else None,
                                          )
     elif cfg.mode.name == "test":
         trainer_args = TrainingArguments(output_dir=output_dir,

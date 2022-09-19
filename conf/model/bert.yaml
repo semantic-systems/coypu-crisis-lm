@@ -1,12 +1,17 @@
 name: "bert"
 pretrained_model: "bert-base-uncased"
 
+pretrained_adapter: "" # path
+
 learning_rate: 1e-4
-adamw_beta1: 0.9
-adamw_beta2: 0.999
+adam_beta1: 0.9
+adam_beta2: 0.999
 weight_decay: 0.01
 warmup_steps: 10000
 num_train_epochs: 100
 pad_to_max_length: True
 max_seq_length: None
 mlm_probability: 0.15
+uniform_masking: True
+per_device_train_batch_size: 64
+per_device_eval_batch_size: 64

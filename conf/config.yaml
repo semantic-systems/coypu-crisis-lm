@@ -7,11 +7,11 @@
 
 defaults:
   - _self_
-  - mode: train # train, mlm_inference
-  - model: bertweet # see 'model' config subfolder for options
+  - mode: evaluate # train, evaluate, mlm_inference
+  - model: bert # see 'model' config subfolder for options
 
 
-architecture: seq # mlm, seq = sequence classification, adap_mlm, adap_seq (adap = adapter)
+architecture: adap_seq # mlm, seq = sequence classification, adap_mlm, adap_seq (adap = adapter)
 mlruns_dir: mlruns
 
 overwrite_data_cache: True

@@ -3,14 +3,9 @@ Some helper functions copied from
 https://github.com/huggingface/transformers/blob/master/examples/research_projects/mlm_wwm/ """
 
 import os
-import shutil
-import math
 import sys
 from pprint import pprint
 
-import numpy as np
-from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, \
-    classification_report, plot_confusion_matrix
 from transformers import (
     Trainer,
     AdapterTrainer,
@@ -18,9 +13,10 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint
 
+from src.evaluate import eval_model
 from src.load_data import get_data_collator, get_data
 from src.load_save_model import get_model_and_tokenizer, get_trainer_args, save_model_state
-from src.utils import get_current_artifacts_dir
+from src.metrics import classifier_metrics
 from src.custom_mlflow_callback import CustomMLflowCallback
 
 artifacts_output_dir = "artifacts"
@@ -49,48 +45,6 @@ def _get_last_checkpoint(cfg, training_args, logger):
     return checkpoint
 
 
-def _classifier_metrics(p):
-    logits, labels = p
-    preds = np.argmax(logits, axis=1)
-    average = "macro"
-    accuracy = accuracy_score(y_true=labels, y_pred=preds)
-    recall = recall_score(y_true=labels, y_pred=preds, average=average)
-    precision = precision_score(y_true=labels, y_pred=preds, average=average)
-    f1 = f1_score(y_true=labels, y_pred=preds, average=average)
-    f1_weighted = f1_score(y_true=labels, y_pred=preds, average="weighted")
-    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1, "f1_weighted": f1_weighted}
-
-
-def _eval_model(cfg, trainer, training_args, logger):
-    results = {}
-    if training_args.do_eval:
-        logger.info("*** Evaluate on validation set ***")
-
-        eval_output = trainer.evaluate()
-        print(eval_output)
-        if cfg.architecture == "mlm":
-            perplexity = math.exp(eval_output["eval_loss"])
-            results["perplexity"] = perplexity
-        elif cfg.architecture == "seq":
-            results["accuracy"] = eval_output["eval_accuracy"]
-            results["precision"] = eval_output["eval_precision"]
-            results["recall"] = eval_output["eval_recall"]
-            results["f1"] = eval_output["eval_f1"]
-            results["f1_weighted"] = eval_output["eval_f1_weighted"]
-        else:
-            sys.exit()
-
-        output_eval_file = os.path.join(training_args.output_dir, "eval_results.txt")
-        if trainer.is_world_process_zero():
-            # Relevant for distributed training. Check if this is main process.
-            with open(output_eval_file, "w") as writer:
-                logger.info("***** Eval results *****")
-                for key, value in sorted(results.items()):
-                    logger.info(f"  {key} = {value}")
-                    writer.write(f"{key} = {value}\n")
-    return results
-
-
 def train(cfg, logger):
     if cfg.model.name == "bertweet":
         normalization = True
@@ -98,17 +52,19 @@ def train(cfg, logger):
         normalization = False
     if cfg.architecture in ["mlm", "adap_mlm"]:
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
-                                                   cfg.mode.freeze_encoder, normalization=normalization)
+                                                   cfg.mode.freeze_encoder, cfg.model.pretrained_adapter,
+                                                   do_train=cfg.mode.do_train, normalization=normalization, task_name=cfg.task)
         data_collator = get_data_collator(cfg.architecture, tokenizer, cfg.model.mlm_probability,
                                           cfg.model.uniform_masking)
         compute_metrics = None
     elif cfg.architecture in ["seq", "adap_seq"]:
         model, tokenizer = get_model_and_tokenizer(cfg.model.pretrained_model, cfg.architecture,
-                                                   cfg.mode.freeze_encoder, normalization=normalization,
+                                                   cfg.mode.freeze_encoder, cfg.model.pretrained_adapter,
+                                                   do_train=cfg.mode.do_train, normalization=normalization,
                                                    num_labels=2 if cfg.task == "informativeness" else 11,
                                                    task_name=cfg.task)
         data_collator = None
-        compute_metrics = _classifier_metrics
+        compute_metrics = classifier_metrics
     else:
         sys.exit("Architecture style not implemented.")
 
@@ -138,7 +94,7 @@ def train(cfg, logger):
 
     # Define callbacks
     mlflow_cb = CustomMLflowCallback()
-    callbacks = [mlflow_cb]
+    callbacks = [] #[mlflow_cb]
 
     if cfg.mode.early_stopping:
         early_stopping_cb = EarlyStoppingCallback(
@@ -155,6 +111,7 @@ def train(cfg, logger):
             eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None,
             tokenizer=tokenizer,
             data_collator=data_collator,
+            callbacks=callbacks,
         )
     else:
         trainer = Trainer(
@@ -171,7 +128,9 @@ def train(cfg, logger):
         checkpoint = _get_last_checkpoint(cfg, training_args, logger)
     else:
         checkpoint = None
-    train_result = trainer.train(resume_from_checkpoint=checkpoint)
+    trainer.train(resume_from_checkpoint=checkpoint)
+    train_result = trainer.evaluate(eval_dataset=tokenized_dataset["validation"] if training_args.do_eval else None)
+    print(train_result)
 
     # For development. Check which layers are not frozen:
     for name, param in model.named_parameters():
@@ -181,7 +140,7 @@ def train(cfg, logger):
         trainer.save_model()
 
     save_model_state(logger, train_result, trainer, training_args)
-    results = _eval_model(cfg, trainer, training_args, logger)
+    results = eval_model(cfg, trainer, training_args, logger)
 
     # Move all stored artifacts to mlflow run
     #artifacts_dir = get_current_artifacts_dir(cfg)

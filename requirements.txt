@@ -1,6 +1,7 @@
 adapter-transformers
 bidict
 datasets
+evaluate
 emoji
 hydra-core
 hydra-optuna-sweeper

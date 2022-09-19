@@ -11,15 +11,15 @@ from src.utils import unzip_tar_file, download_data_from_url, get_project_root
 
 
 def get_data_collator(architecture, tokenizer, mlm_probability=None, uniform_masking=False):
-    if architecture == "mlm":
+    if architecture in ["mlm", "adap_mlm"]:
         data_collator = CustomDataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True,
                                                               mlm_probability=mlm_probability,
                                                               uniform_masking=uniform_masking)
-    elif architecture == "seq":
+    elif architecture in ["seq", "adap_seq"]:
         data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
     else:
         sys.exit(
-            "Architecture not implemented. Please check your config.yaml and select either 'mlm' or 'seq'.")
+            "Architecture not implemented. Please check your config.yaml.")
     return data_collator
 
 
@@ -29,7 +29,7 @@ def get_data(cfg):
     if not os.path.isdir(data_dir):
         unzip_tar_file(download_data_from_url(cfg))
     if cfg.debugging_mode:
-        if cfg.architecture == "mlm":
+        if cfg.architecture in ["mlm", "adap_mlm"]:
             config_name = "debugging_mlm"
         else:
             config_name = "debugging_seq"
