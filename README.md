@@ -1,5 +1,4 @@
 # crisis-lm
-WIP: Development of a crisis-tweet LM 
 
 ## Data
 When running `python main.py` the CrisisBench dataset is automatically downloaded to a data 
